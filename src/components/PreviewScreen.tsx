@@ -294,42 +294,45 @@ export default function PreviewScreen() {
 
       {/* Support / Share QRIS Modal */}
       {showSupportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-bounce-in">
-          <div className="card-cartoon max-w-sm w-full p-6 bg-white relative text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-bounce-in">
+          <div className="card-cartoon max-w-md w-full p-5 sm:p-6 bg-white relative text-center max-h-[95vh] overflow-y-auto flex flex-col">
             <button
               onClick={() => setShowSupportModal(false)}
-              className="absolute top-3 right-3 p-1 text-gray-400 hover:text-gray-600 cursor-pointer"
+              className="absolute top-3.5 right-3.5 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full cursor-pointer transition-colors z-10"
+              title="Tutup Modal"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#ff4d6d] to-[#ff9a9e] text-white flex items-center justify-center mx-auto mb-3 shadow-[0_4px_0_#2d1b4e]">
-              <Heart className="w-7 h-7" />
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#ff4d6d] to-[#ff9a9e] text-white flex items-center justify-center shadow-sm">
+                <Heart className="w-4 h-4" />
+              </div>
+              <h4 className="text-xl font-black text-[#2d1b4e]">Dukung KikoBooth ✨</h4>
             </div>
 
-            <h4 className="text-xl font-black text-[#2d1b4e]">Terima Kasih!</h4>
-            <p className="text-xs font-semibold text-[#5e4777] mt-1 mb-4">
-              Suka dengan hasil foto KikoBooth? Bagikan ke temanmu atau traktir kopi pengembang! ☕
+            <p className="text-xs font-semibold text-[#5e4777] mb-3">
+              Suka dengan hasil fotomu? Kamu bisa traktir kopi pengembang via scan QRIS di bawah ini:
             </p>
 
-            <div className="p-3 bg-gray-50 rounded-2xl border-2 border-gray-200 mb-4">
+            {/* Full-width QRIS Image Display */}
+            <div className="w-full bg-gray-50 rounded-2xl border-2 border-[#2d1b4e]/15 p-2 sm:p-3 mb-4 shadow-inner flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/qris.jpeg"
-                alt="QRIS Donasi"
-                className="w-44 h-44 object-contain mx-auto rounded-lg"
+                alt="QRIS Donasi KikoBooth"
+                className="w-full h-auto max-h-[58vh] object-contain rounded-xl shadow-sm"
               />
-              <span className="text-[10px] font-bold text-gray-400 block mt-2">
-                Scan QRIS KikoBooth
-              </span>
             </div>
 
-            <button
-              onClick={() => setShowSupportModal(false)}
-              className="btn-cartoon btn-cartoon-ghost text-xs py-2 w-full"
-            >
-              Tutup
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSupportModal(false)}
+                className="btn-cartoon btn-cartoon-primary text-xs sm:text-sm py-2.5 w-full"
+              >
+                Selesai & Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
