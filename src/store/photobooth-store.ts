@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { PlacedSticker } from "@/lib/stickers";
 import { FrameDef, FRAMES } from "@/lib/frames";
+import { flipImageDataUrl } from "@/lib/render-engine";
 
 export type AppPage = "home" | "booth" | "gallery" | "frames" | "guide";
 export type BoothStep = "camera" | "studio" | "preview";
@@ -124,6 +125,10 @@ interface PhotoboothState {
   swapSlots: (fromIndex: number, toIndex: number) => void;
   setSelectedSlotIndex: (index: number | null) => void;
   initializeSlotsWithCaptured: () => void;
+  flipSlotPhoto: (slotIndex: number) => Promise<void>;
+  flipAllSlotPhotos: () => Promise<void>;
+  flipCapturedPhoto: (index: number) => Promise<void>;
+  flipAllCapturedPhotos: () => Promise<void>;
 
   // Camera Settings
   selectedCameraDeviceId: string | null;
@@ -293,6 +298,43 @@ export const usePhotoboothStore = create<PhotoboothState>()(
           slots.push(photos[i] ?? null);
         }
         set({ frameSlots: slots });
+      },
+
+      flipSlotPhoto: async (slotIndex: number) => {
+        const slots = [...get().frameSlots];
+        const currentUrl = slots[slotIndex];
+        if (!currentUrl) return;
+        const flipped = await flipImageDataUrl(currentUrl);
+        slots[slotIndex] = flipped;
+        set({ frameSlots: slots });
+      },
+
+      flipAllSlotPhotos: async () => {
+        const slots = [...get().frameSlots];
+        const flippedSlots = await Promise.all(
+          slots.map(async (url) => (url ? await flipImageDataUrl(url) : null))
+        );
+        set({ frameSlots: flippedSlots });
+      },
+
+      flipCapturedPhoto: async (index: number) => {
+        const captured = [...get().capturedPhotos];
+        const currentUrl = captured[index];
+        if (!currentUrl) return;
+        const flipped = await flipImageDataUrl(currentUrl);
+        captured[index] = flipped;
+        const slots = get().frameSlots.map((url) => (url === currentUrl ? flipped : url));
+        set({ capturedPhotos: captured, frameSlots: slots });
+      },
+
+      flipAllCapturedPhotos: async () => {
+        const captured = await Promise.all(
+          get().capturedPhotos.map((url) => flipImageDataUrl(url))
+        );
+        const slots = await Promise.all(
+          get().frameSlots.map(async (url) => (url ? await flipImageDataUrl(url) : null))
+        );
+        set({ capturedPhotos: captured, frameSlots: slots });
       },
 
       // Camera Settings

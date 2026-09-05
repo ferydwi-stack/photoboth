@@ -49,6 +49,7 @@ export default function CameraScreen() {
     selectedFilter,
     setSelectedFilter,
     initializeSlotsWithCaptured,
+    flipCapturedPhoto,
   } = usePhotoboothStore();
 
   const {
@@ -261,11 +262,11 @@ export default function CameraScreen() {
             }}
             className={`btn-cartoon btn-cartoon-sm ${
               isMirrored ? "btn-cartoon-primary" : "btn-cartoon-ghost"
-            } p-2 sm:px-3 text-xs`}
-            title={isMirrored ? "Mirror Aktif: Klik untuk Nonaktifkan" : "Mirror Nonaktif: Klik untuk Aktifkan"}
+            } px-2.5 sm:px-3 py-1.5 text-xs`}
+            title={isMirrored ? "Mode Cermin Aktif (Klik untuk Mode Asli)" : "Mode Asli Aktif (Klik untuk Mode Cermin)"}
           >
             <FlipHorizontal className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline text-xs">{isMirrored ? "Mirror On" : "Mirror Off"}</span>
+            <span className="text-[10px] sm:text-xs font-black">{isMirrored ? "Cermin: ON" : "Asli: OFF"}</span>
           </button>
 
           {/* Timer Duration */}
@@ -432,6 +433,19 @@ export default function CameraScreen() {
                 <span className="absolute bottom-0 right-0 px-1 text-[8px] font-black bg-black/60 text-white rounded-tl-md">
                   {i + 1}
                 </span>
+
+                {/* Flip single captured photo in camera reel */}
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    playClick();
+                    await flipCapturedPhoto(i);
+                  }}
+                  className="absolute top-0.5 right-0.5 p-0.5 rounded bg-black/75 text-white hover:bg-[#ff4d6d] z-20 cursor-pointer shadow"
+                  title="Balik foto ini jika kebalik"
+                >
+                  <FlipHorizontal className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
               </div>
             ))}
           </div>
@@ -513,6 +527,22 @@ export default function CameraScreen() {
                 <SwitchCamera className="w-4 h-4 sm:w-5 sm:h-5 text-[#764ba2]" />
               </button>
             )}
+
+            {/* Quick Mirror / Cermin Toggle Button on Shutter Bar */}
+            <button
+              onClick={() => {
+                playClick();
+                setIsMirrored(!isMirrored);
+              }}
+              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-[#2d1b4e] shadow-[0_3px_0_#2d1b4e] flex items-center justify-center cursor-pointer transition-all active:translate-y-1 ${
+                isMirrored
+                  ? "bg-[#ff4d6d] text-white"
+                  : "bg-white text-[#764ba2] hover:bg-gray-50"
+              }`}
+              title={isMirrored ? "Mode Cermin Aktif (Klik untuk Mode Asli)" : "Mode Asli Aktif (Klik untuk Mode Cermin)"}
+            >
+              <FlipHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
 
             {/* Shutter Button */}
             <button

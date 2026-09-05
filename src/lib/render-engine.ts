@@ -763,3 +763,24 @@ export function generateFilename(name: string): string {
   const ts = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
   return `${name.replace(/\s+/g, "-").toLowerCase()}_photobooth_${ts}.png`;
 }
+
+// Utility: Flip a base64 DataURL horizontally
+export function flipImageDataUrl(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(dataUrl);
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/jpeg", 0.95));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}

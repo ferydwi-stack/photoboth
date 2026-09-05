@@ -24,6 +24,7 @@ import {
   Type,
   Trash2,
   ArrowUpDown,
+  FlipHorizontal,
   X,
   RotateCw,
   ZoomIn,
@@ -40,6 +41,9 @@ export default function StudioScreen() {
     assignPhotoToSlot,
     removePhotoFromSlot,
     swapSlots,
+    flipSlotPhoto,
+    flipAllSlotPhotos,
+    flipCapturedPhoto,
     selectedSlotIndex,
     setSelectedSlotIndex,
     selectedFrame,
@@ -349,7 +353,24 @@ export default function StudioScreen() {
 
                   {/* Slot Controls on hover / touch */}
                   {photoUrl ? (
-                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                    <div
+                      className={`absolute top-1.5 right-1.5 flex items-center gap-1 z-20 transition-opacity ${
+                        isTarget ? "opacity-100" : "opacity-90 sm:opacity-0 sm:group-hover:opacity-100"
+                      }`}
+                    >
+                      {/* Flip / Mirror Slot Photo Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playClick();
+                          flipSlotPhoto(slotIdx);
+                        }}
+                        className="p-1 rounded-md bg-white/95 text-[#764ba2] hover:bg-white shadow hover:scale-110 active:scale-95 cursor-pointer transition-transform"
+                        title="Balik Arah Foto Ini (Flip / Cermin)"
+                      >
+                        <FlipHorizontal className="w-3.5 h-3.5" />
+                      </button>
+
                       {slotIdx < geom.slots.length - 1 && (
                         <button
                           onClick={(e) => {
@@ -550,6 +571,19 @@ export default function StudioScreen() {
                   </p>
                 </div>
 
+                {/* Quick Action: Flip all photos in frame */}
+                <button
+                  onClick={async () => {
+                    playClick();
+                    await flipAllSlotPhotos();
+                  }}
+                  className="btn-cartoon btn-cartoon-sm btn-cartoon-warm w-full py-2.5 px-3 text-xs flex items-center justify-center gap-2 shadow-[0_3px_0_#2d1b4e] cursor-pointer"
+                  title="Balik semua foto di frame jika posisi terasa kebalik"
+                >
+                  <FlipHorizontal className="w-4 h-4 text-[#764ba2]" />
+                  <span className="font-black text-[#2d1b4e]">🪞 Balik / Mirror Semua Foto di Frame</span>
+                </button>
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {capturedPhotos.map((photoUrl, idx) => {
                     const slotUsedIndex = frameSlots.findIndex((s) => s === photoUrl);
@@ -567,6 +601,19 @@ export default function StudioScreen() {
                             : "border-[#2d1b4e]/20 hover:border-[#ff4d6d] hover:scale-105"
                         }`}
                       >
+                        {/* Flip single captured photo */}
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            playClick();
+                            await flipCapturedPhoto(idx);
+                          }}
+                          className="absolute top-1 right-1 p-1 rounded-md bg-white/90 text-[#764ba2] hover:bg-white shadow hover:scale-110 active:scale-95 z-20 cursor-pointer"
+                          title="Balik foto ini (Flip/Cermin)"
+                        >
+                          <FlipHorizontal className="w-3 h-3" />
+                        </button>
+
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={photoUrl}
