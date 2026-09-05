@@ -261,11 +261,11 @@ export default function CameraScreen() {
             }}
             className={`btn-cartoon btn-cartoon-sm ${
               isMirrored ? "btn-cartoon-primary" : "btn-cartoon-ghost"
-            } p-2 sm:px-3`}
-            title="Mirror Kamera"
+            } p-2 sm:px-3 text-xs`}
+            title={isMirrored ? "Mirror Aktif: Klik untuk Nonaktifkan" : "Mirror Nonaktif: Klik untuk Aktifkan"}
           >
             <FlipHorizontal className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline text-xs">Mirror</span>
+            <span className="hidden sm:inline text-xs">{isMirrored ? "Mirror On" : "Mirror Off"}</span>
           </button>
 
           {/* Timer Duration */}
@@ -385,12 +385,15 @@ export default function CameraScreen() {
             }}
           />
 
-          {/* Countdown Overlay Pulsing in Center */}
+          {/* Countdown Overlay: 100% Crystal Clear Live Feed (No Blur, No Dark Overlay) */}
           {count !== null && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] z-20">
-              <div className="animate-count-pulse">
-                <div className="w-24 h-24 sm:w-36 sm:h-36 rounded-full bg-white border-4 border-[#2d1b4e] shadow-[0_10px_0_#2d1b4e] flex items-center justify-center">
-                  <span className="text-5xl sm:text-7xl font-black text-[#ff4d6d]">{count}</span>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <div className="animate-count-pulse flex flex-col items-center">
+                <div className="px-4 py-1.5 rounded-full bg-[#2d1b4e]/80 text-white text-[11px] sm:text-xs font-black uppercase tracking-wider mb-2 border border-white/30 shadow-md">
+                  📸 Bersiaplah!
+                </div>
+                <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white/90 border-4 border-[#2d1b4e] shadow-[0_10px_25px_rgba(0,0,0,0.35)] flex items-center justify-center">
+                  <span className="text-4xl sm:text-6xl font-black text-[#ff4d6d]">{count}</span>
                 </div>
               </div>
             </div>

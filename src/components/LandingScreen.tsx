@@ -46,20 +46,20 @@ export default function LandingScreen() {
       </div>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-14 pb-12 sm:pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Copywriting & CTA */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
             {/* Tag Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 border-2 border-[#2d1b4e]/15 shadow-sm mb-6 animate-bounce-in">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full bg-white/95 border-2 border-[#2d1b4e]/15 shadow-sm mb-4 sm:mb-6 animate-bounce-in">
               <span className="flex h-2.5 w-2.5 rounded-full bg-[#ff4d6d] animate-ping" />
-              <span className="text-xs font-black uppercase tracking-wider text-[#764ba2]">
-                ✨ Korean 4-Cut Life4Cuts Experience
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-[#764ba2]">
+                ✨ Korean 4-Cut Life4Cuts Studio
               </span>
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-[#2d1b4e] leading-[1.08] tracking-tight mb-6">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-[#2d1b4e] leading-[1.12] sm:leading-[1.08] tracking-tight mb-4 sm:mb-6">
               Abadikan Momen <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff4d6d] via-[#a18cd1] to-[#667eea]">
                 Estetik & Berwarna
@@ -68,25 +68,25 @@ export default function LandingScreen() {
             </h1>
 
             {/* Description */}
-            <p className="text-base sm:text-xl font-bold text-[#5e4777] leading-relaxed max-w-2xl mb-8">
-              Photobooth web ala Korea di laptopmu tanpa alat tambahan. Pilih{" "}
+            <p className="text-sm sm:text-lg font-bold text-[#5e4777] leading-relaxed max-w-2xl mb-6 sm:mb-8">
+              Photobooth web ala Korea di smartphone & laptopmu tanpa alat tambahan. Pilih{" "}
               <strong className="text-[#ff4d6d]">6 atau 10 kali pose</strong>, atur foto ke dalam
               frame strip 4-cut tanpa distorsi, tambahkan stiker & emotikon lucu, lalu cetak atau
               unduh instan!
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto mb-10">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto mb-6 sm:mb-10">
               <button
                 onClick={() => {
                   playClick();
                   setShowModal(true);
                 }}
-                className="btn-cartoon btn-cartoon-primary text-lg sm:text-xl px-8 py-4.5 w-full sm:w-auto shadow-[0_8px_0_#2d1b4e] hover:shadow-[0_10px_0_#2d1b4e]"
+                className="btn-cartoon btn-cartoon-primary text-base sm:text-xl px-6 sm:px-8 py-3.5 sm:py-4.5 w-full sm:w-auto shadow-[0_5px_0_#2d1b4e] sm:shadow-[0_8px_0_#2d1b4e] hover:shadow-[0_10px_0_#2d1b4e] justify-center"
               >
-                <Camera className="w-6 h-6" />
+                <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
                 Mulai Photobooth Sekarang
-                <ArrowRight className="w-5 h-5 ml-1" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1" />
               </button>
 
               <button
@@ -94,32 +94,32 @@ export default function LandingScreen() {
                   playClick();
                   setActivePage("frames");
                 }}
-                className="btn-cartoon btn-cartoon-ghost text-base px-6 py-4 w-full sm:w-auto shadow-[0_5px_0_#2d1b4e]"
+                className="btn-cartoon btn-cartoon-ghost text-sm sm:text-base px-5 sm:px-6 py-3 sm:py-4 w-full sm:w-auto shadow-[0_4px_0_#2d1b4e] sm:shadow-[0_5px_0_#2d1b4e] justify-center"
               >
-                <Palette className="w-5 h-5 text-[#764ba2]" />
+                <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-[#764ba2]" />
                 Lihat Koleksi Frame ({FRAMES.length}+)
               </button>
             </div>
 
             {/* Micro Highlights */}
-            <div className="grid grid-cols-3 gap-3 w-full max-w-lg border-t-2 border-[#2d1b4e]/10 pt-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full max-w-lg border-t-2 border-[#2d1b4e]/10 pt-4 sm:pt-6">
               <div>
-                <div className="text-2xl sm:text-3xl font-black text-[#764ba2]">6 & 10x</div>
-                <div className="text-xs font-bold text-[#8b6cb0]">Pilihan Shoot</div>
+                <div className="text-xl sm:text-3xl font-black text-[#764ba2]">6 & 10x</div>
+                <div className="text-[11px] sm:text-xs font-bold text-[#8b6cb0]">Pilihan Shoot</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-black text-[#ff4d6d]">4-Cut</div>
-                <div className="text-xs font-bold text-[#8b6cb0]">Fixed Proportions</div>
+                <div className="text-xl sm:text-3xl font-black text-[#ff4d6d]">4-Cut</div>
+                <div className="text-[11px] sm:text-xs font-bold text-[#8b6cb0]">Fixed Proportions</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-black text-[#2d1b4e]">100%</div>
-                <div className="text-xs font-bold text-[#8b6cb0]">Free & Web Based</div>
+                <div className="text-xl sm:text-3xl font-black text-[#2d1b4e]">100%</div>
+                <div className="text-[11px] sm:text-xs font-bold text-[#8b6cb0]">Free Web App</div>
               </div>
             </div>
           </div>
 
           {/* Right Column: 3D Tilted Photobooth Strips Mockup */}
-          <div className="lg:col-span-5 relative flex justify-center items-center py-6">
+          <div className="lg:col-span-5 relative flex justify-center items-center py-4 sm:py-6">
             {/* Background Glow */}
             <div className="absolute w-72 h-96 bg-gradient-to-tr from-[#ff9a9e] to-[#764ba2] rounded-3xl opacity-20 blur-2xl transform rotate-6" />
 
@@ -320,59 +320,62 @@ export default function LandingScreen() {
         </div>
       </section>
 
-      {/* Start Shoot Modal */}
+      {/* Start Shoot Modal / Mobile Bottom Sheet */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-bounce-in">
-          <div className="card-cartoon max-w-md w-full p-6 sm:p-7 bg-white relative">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#ff9a9e] to-[#764ba2] text-white flex items-center justify-center mx-auto mb-3 shadow-[0_6px_0_#2d1b4e]">
-                <Camera className="w-8 h-8" />
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="card-cartoon max-w-lg w-full p-5 sm:p-7 bg-white relative rounded-t-3xl sm:rounded-3xl shadow-2xl border-t-4 sm:border-3 border-[#2d1b4e] max-h-[92dvh] overflow-y-auto">
+            {/* Mobile Drag Indicator Bar */}
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3 sm:hidden" />
+
+            <div className="text-center mb-5 sm:mb-6">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-[#ff9a9e] to-[#764ba2] text-white flex items-center justify-center mx-auto mb-2.5 shadow-[0_4px_0_#2d1b4e] sm:shadow-[0_6px_0_#2d1b4e]">
+                <Camera className="w-6 h-6 sm:w-8 sm:h-8" />
               </div>
-              <h3 className="text-2xl font-black text-[#2d1b4e]">Pilih Mode Shoot</h3>
-              <p className="text-sm font-bold text-[#8b6cb0] mt-1">
+              <h3 className="text-xl sm:text-2xl font-black text-[#2d1b4e]">Pilih Mode Shoot</h3>
+              <p className="text-xs sm:text-sm font-bold text-[#8b6cb0] mt-0.5">
                 Berapa kali Anda ingin berpose di depan kamera?
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
               <button
                 onClick={() => handleStart(6)}
-                className="group p-5 rounded-2xl border-3 border-[#2d1b4e] bg-gradient-to-br from-[#faf5ff] to-[#f3e8ff] hover:from-[#f0e6ff] hover:to-[#e9d5ff] shadow-[0_6px_0_#2d1b4e] active:translate-y-[2px] transition-all text-left cursor-pointer flex flex-col justify-between"
+                className="group p-4 sm:p-5 rounded-2xl border-3 border-[#2d1b4e] bg-gradient-to-br from-[#faf5ff] to-[#f3e8ff] hover:from-[#f0e6ff] hover:to-[#e9d5ff] shadow-[0_4px_0_#2d1b4e] sm:shadow-[0_6px_0_#2d1b4e] active:translate-y-[2px] transition-all text-left cursor-pointer flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl font-black text-[#764ba2]">6x</span>
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <span className="text-2xl sm:text-3xl font-black text-[#764ba2]">6x Take</span>
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-[#764ba2] text-white">
                       Fast
                     </span>
                   </div>
-                  <h4 className="text-lg font-black text-[#2d1b4e]">6 Kali Take</h4>
-                  <p className="text-xs font-semibold text-[#8b6cb0] mt-1">
-                    Cepat & praktis! Ambil 6 foto lalu pilih 4 terbaik untuk masuk frame strip.
+                  <h4 className="text-base sm:text-lg font-black text-[#2d1b4e]">6 Kali Foto</h4>
+                  <p className="text-xs font-semibold text-[#8b6cb0] mt-1 leading-snug">
+                    Cepat & santai! Ambil 6 foto lalu pilih foto terbaik untuk masuk frame strip.
                   </p>
                 </div>
-                <div className="mt-4 flex items-center gap-1 text-xs font-black text-[#764ba2] group-hover:translate-x-1 transition-transform">
+                <div className="mt-3 sm:mt-4 flex items-center gap-1 text-xs font-black text-[#764ba2] group-hover:translate-x-1 transition-transform">
                   Mulai 6 Take →
                 </div>
               </button>
 
               <button
                 onClick={() => handleStart(10)}
-                className="group p-5 rounded-2xl border-3 border-[#2d1b4e] bg-gradient-to-br from-[#fff1f2] to-[#ffe4e6] hover:from-[#ffe4e6] hover:to-[#fecdd3] shadow-[0_6px_0_#2d1b4e] active:translate-y-[2px] transition-all text-left cursor-pointer flex flex-col justify-between"
+                className="group p-4 sm:p-5 rounded-2xl border-3 border-[#2d1b4e] bg-gradient-to-br from-[#fff1f2] to-[#ffe4e6] hover:from-[#ffe4e6] hover:to-[#fecdd3] shadow-[0_4px_0_#2d1b4e] sm:shadow-[0_6px_0_#2d1b4e] active:translate-y-[2px] transition-all text-left cursor-pointer flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl font-black text-[#e11d48]">10x</span>
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <span className="text-2xl sm:text-3xl font-black text-[#e11d48]">10x Take</span>
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-[#e11d48] text-white flex items-center gap-1">
                       <Heart className="w-2.5 h-2.5" /> Favorite
                     </span>
                   </div>
-                  <h4 className="text-lg font-black text-[#2d1b4e]">10 Kali Take</h4>
-                  <p className="text-xs font-semibold text-[#be123c] mt-1">
-                    Puas bergaya! Ambil 10 pose beragam untuk hasil paling aesthetic.
+                  <h4 className="text-base sm:text-lg font-black text-[#2d1b4e]">10 Kali Foto</h4>
+                  <p className="text-xs font-semibold text-[#be123c] mt-1 leading-snug">
+                    Puas bergaya! Ambil 10 pose beragam untuk hasil paling aesthetic & seru.
                   </p>
                 </div>
-                <div className="mt-4 flex items-center gap-1 text-xs font-black text-[#e11d48] group-hover:translate-x-1 transition-transform">
+                <div className="mt-3 sm:mt-4 flex items-center gap-1 text-xs font-black text-[#e11d48] group-hover:translate-x-1 transition-transform">
                   Mulai 10 Take →
                 </div>
               </button>
@@ -380,7 +383,7 @@ export default function LandingScreen() {
 
             <button
               onClick={() => setShowModal(false)}
-              className="w-full py-2.5 rounded-xl border-2 border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-100 cursor-pointer"
+              className="w-full py-3 rounded-xl border-2 border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-100 cursor-pointer"
             >
               Batal
             </button>

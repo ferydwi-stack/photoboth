@@ -43,28 +43,28 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/85 border-b-2 border-[#2d1b4e]/10 shadow-[0_4px_20px_rgba(45,27,78,0.06)] transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 border-b-2 border-[#2d1b4e]/10 shadow-[0_2px_15px_rgba(45,27,78,0.05)] transition-all">
+        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-15 sm:h-18 flex items-center justify-between">
           {/* Brand Logo */}
           <button
             onClick={() => handleNav("home")}
-            className="flex items-center gap-3 cursor-pointer group text-left"
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group text-left"
           >
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#ff6b9d] via-[#a18cd1] to-[#667eea] p-[2.5px] shadow-[0_4px_12px_rgba(255,107,157,0.35)] group-hover:rotate-6 transition-transform">
-              <div className="w-full h-full bg-[#1e1333] rounded-[14px] flex items-center justify-center">
-                <Camera className="w-6 h-6 text-[#fecfef]" />
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-[#ff6b9d] via-[#a18cd1] to-[#667eea] p-[2px] sm:p-[2.5px] shadow-[0_3px_10px_rgba(255,107,157,0.35)] group-hover:rotate-6 transition-transform flex-shrink-0">
+              <div className="w-full h-full bg-[#1e1333] rounded-[10px] sm:rounded-[14px] flex items-center justify-center">
+                <Camera className="w-4 h-4 sm:w-6 sm:h-6 text-[#fecfef]" />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-2xl font-black tracking-tight text-[#2d1b4e] font-sans">
+                <span className="text-xl sm:text-2xl font-black tracking-tight text-[#2d1b4e] font-sans">
                   Kiko<span className="text-[#ff6b9d]">Booth</span>
                 </span>
-                <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full bg-[#ff9a9e]/20 text-[#d81159] border border-[#ff9a9e]/40">
+                <span className="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-full bg-[#ff9a9e]/20 text-[#d81159] border border-[#ff9a9e]/40">
                   4-Cut
                 </span>
               </div>
-              <p className="text-[11px] font-bold text-[#8b6cb0] -mt-0.5">
+              <p className="hidden sm:block text-[11px] font-bold text-[#8b6cb0] -mt-0.5">
                 Korean Life4Cuts Studio
               </p>
             </div>
@@ -108,7 +108,7 @@ export default function Navbar() {
                 playClick();
                 setSoundEnabled(!soundEnabled);
               }}
-              className={`p-2.5 rounded-xl border-2 transition-all cursor-pointer ${
+              className={`p-2 sm:p-2.5 rounded-xl border-2 transition-all cursor-pointer ${
                 soundEnabled
                   ? "border-[#764ba2]/30 bg-white text-[#764ba2] hover:bg-[#f5eeff]"
                   : "border-gray-200 bg-gray-100 text-gray-400 hover:bg-gray-200"
@@ -118,13 +118,13 @@ export default function Navbar() {
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
-            {/* Start Photobooth CTA */}
+            {/* Start Photobooth CTA (Desktop only to prevent cramming mobile header) */}
             <button
               onClick={() => {
                 playClick();
                 setShowStartModal(true);
               }}
-              className="btn-cartoon btn-cartoon-sm btn-cartoon-primary hidden sm:inline-flex px-4 py-2 text-sm shadow-[0_4px_0_#2d1b4e]"
+              className="btn-cartoon btn-cartoon-sm btn-cartoon-primary hidden md:inline-flex px-4 py-2 text-sm shadow-[0_4px_0_#2d1b4e]"
             >
               <Camera className="w-4 h-4" />
               Mulai Foto
@@ -182,46 +182,49 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* Start Booth Session Modal (6x vs 10x shots choice) */}
+      {/* Start Shoot Modal / Mobile Bottom Sheet */}
       {showStartModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-bounce-in">
-          <div className="card-cartoon max-w-md w-full p-6 sm:p-7 bg-white relative">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="card-cartoon max-w-lg w-full p-5 sm:p-7 bg-white relative rounded-t-3xl sm:rounded-3xl shadow-2xl border-t-4 sm:border-3 border-[#2d1b4e] max-h-[92dvh] overflow-y-auto">
+            {/* Mobile Drag Indicator Bar */}
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3 sm:hidden" />
+
             <button
               onClick={() => setShowStartModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-500 cursor-pointer"
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-500 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#ff9a9e] to-[#764ba2] text-white flex items-center justify-center mx-auto mb-3 shadow-[0_6px_0_#2d1b4e]">
-                <Camera className="w-8 h-8" />
+            <div className="text-center mb-5 sm:mb-6">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-[#ff9a9e] to-[#764ba2] text-white flex items-center justify-center mx-auto mb-2.5 shadow-[0_4px_0_#2d1b4e] sm:shadow-[0_6px_0_#2d1b4e]">
+                <Camera className="w-6 h-6 sm:w-8 sm:h-8" />
               </div>
-              <h3 className="text-2xl font-black text-[#2d1b4e]">Pilih Mode Shoot</h3>
-              <p className="text-sm font-bold text-[#8b6cb0] mt-1">
+              <h3 className="text-xl sm:text-2xl font-black text-[#2d1b4e]">Pilih Mode Shoot</h3>
+              <p className="text-xs sm:text-sm font-bold text-[#8b6cb0] mt-0.5">
                 Berapa kali Anda ingin berpose di depan kamera?
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
               {/* 6 Shots Option */}
               <button
                 onClick={() => handleStart(6)}
-                className="group p-5 rounded-2xl border-3 border-[#2d1b4e] bg-gradient-to-br from-[#faf5ff] to-[#f3e8ff] hover:from-[#f0e6ff] hover:to-[#e9d5ff] shadow-[0_6px_0_#2d1b4e] active:translate-y-[2px] active:shadow-[0_2px_0_#2d1b4e] transition-all text-left cursor-pointer flex flex-col justify-between"
+                className="group p-4 sm:p-5 rounded-2xl border-3 border-[#2d1b4e] bg-gradient-to-br from-[#faf5ff] to-[#f3e8ff] hover:from-[#f0e6ff] hover:to-[#e9d5ff] shadow-[0_4px_0_#2d1b4e] sm:shadow-[0_6px_0_#2d1b4e] active:translate-y-[2px] transition-all text-left cursor-pointer flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl font-black text-[#764ba2]">6x</span>
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <span className="text-2xl sm:text-3xl font-black text-[#764ba2]">6x Take</span>
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-[#764ba2] text-white">
                       Fast
                     </span>
                   </div>
-                  <h4 className="text-lg font-black text-[#2d1b4e]">6 Kali Take</h4>
-                  <p className="text-xs font-semibold text-[#8b6cb0] mt-1">
-                    Cepat & seru! Ambil 6 foto lalu pilih 4 terbaik untuk frame strip.
+                  <h4 className="text-base sm:text-lg font-black text-[#2d1b4e]">6 Kali Foto</h4>
+                  <p className="text-xs font-semibold text-[#8b6cb0] mt-1 leading-snug">
+                    Cepat & seru! Ambil 6 foto lalu pilih foto terbaik untuk frame strip.
                   </p>
                 </div>
-                <div className="mt-4 flex items-center gap-1 text-xs font-black text-[#764ba2] group-hover:translate-x-1 transition-transform">
+                <div className="mt-3 sm:mt-4 flex items-center gap-1 text-xs font-black text-[#764ba2] group-hover:translate-x-1 transition-transform">
                   Mulai 6 Take →
                 </div>
               </button>
@@ -229,29 +232,32 @@ export default function Navbar() {
               {/* 10 Shots Option */}
               <button
                 onClick={() => handleStart(10)}
-                className="group p-5 rounded-2xl border-3 border-[#2d1b4e] bg-gradient-to-br from-[#fff1f2] to-[#ffe4e6] hover:from-[#ffe4e6] hover:to-[#fecdd3] shadow-[0_6px_0_#2d1b4e] active:translate-y-[2px] active:shadow-[0_2px_0_#2d1b4e] transition-all text-left cursor-pointer flex flex-col justify-between"
+                className="group p-4 sm:p-5 rounded-2xl border-3 border-[#2d1b4e] bg-gradient-to-br from-[#fff1f2] to-[#ffe4e6] hover:from-[#ffe4e6] hover:to-[#fecdd3] shadow-[0_4px_0_#2d1b4e] sm:shadow-[0_6px_0_#2d1b4e] active:translate-y-[2px] transition-all text-left cursor-pointer flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl font-black text-[#e11d48]">10x</span>
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <span className="text-2xl sm:text-3xl font-black text-[#e11d48]">10x Take</span>
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-[#e11d48] text-white flex items-center gap-1">
                       <Heart className="w-2.5 h-2.5" /> Favorite
                     </span>
                   </div>
-                  <h4 className="text-lg font-black text-[#2d1b4e]">10 Kali Take</h4>
-                  <p className="text-xs font-semibold text-[#be123c] mt-1">
-                    Lebih puas! Coba 10 pose berbeda dan bebas pilih foto terfavorit.
+                  <h4 className="text-base sm:text-lg font-black text-[#2d1b4e]">10 Kali Foto</h4>
+                  <p className="text-xs font-semibold text-[#be123c] mt-1 leading-snug">
+                    Lebih puas! Coba 10 pose beragam untuk hasil paling aesthetic & bebas.
                   </p>
                 </div>
-                <div className="mt-4 flex items-center gap-1 text-xs font-black text-[#e11d48] group-hover:translate-x-1 transition-transform">
+                <div className="mt-3 sm:mt-4 flex items-center gap-1 text-xs font-black text-[#e11d48] group-hover:translate-x-1 transition-transform">
                   Mulai 10 Take →
                 </div>
               </button>
             </div>
 
-            <div className="text-center text-xs font-bold text-[#8b6cb0]">
-              ✨ Selesai foto, Anda bisa memindahkan foto mana saja ke dalam frame!
-            </div>
+            <button
+              onClick={() => setShowStartModal(false)}
+              className="w-full py-3 rounded-xl border-2 border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-100 cursor-pointer"
+            >
+              Batal
+            </button>
           </div>
         </div>
       )}

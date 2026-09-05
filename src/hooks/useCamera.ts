@@ -228,7 +228,7 @@ export function useCamera(): UseCameraReturn {
   }, [availableCameras, selectedDeviceId, setSelectedDeviceId]);
 
   // Capture High-Res Snapshot from video
-  const capturePhoto = useCallback((mirror: boolean = true): string | null => {
+  const capturePhoto = useCallback((mirror: boolean = false): string | null => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || video.videoWidth === 0) return null;

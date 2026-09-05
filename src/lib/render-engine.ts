@@ -59,6 +59,159 @@ export function roundRect(
   ctx.closePath();
 }
 
+// Arch / Cathedral Dome Path Helper (Lengkungan Kubah Seni Seoul Estetik)
+export function drawArchPath(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number
+) {
+  const domeRadius = Math.min(w / 2, h / 2);
+  const bottomRadius = Math.min(r, 14, Math.max(0, (h - domeRadius) / 2));
+
+  ctx.beginPath();
+  // Bottom-left corner
+  ctx.moveTo(x + bottomRadius, y + h);
+  // Bottom line to bottom-right
+  ctx.lineTo(x + w - bottomRadius, y + h);
+  ctx.quadraticCurveTo(x + w, y + h, x + w, y + h - bottomRadius);
+  // Right side up to dome base
+  ctx.lineTo(x + w, y + domeRadius);
+  // Arch semicircle dome across top
+  ctx.arc(x + w / 2, y + domeRadius, domeRadius, 0, Math.PI, true);
+  // Left side down to bottom-left
+  ctx.lineTo(x, y + h - bottomRadius);
+  ctx.quadraticCurveTo(x, y + h, x + bottomRadius, y + h);
+  ctx.closePath();
+}
+
+// Unified slot shape path selector
+export function drawSlotPath(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number,
+  shapeStyle?: string
+) {
+  if (shapeStyle === "arch") {
+    drawArchPath(ctx, x, y, w, h, r);
+  } else {
+    roundRect(ctx, x, y, w, h, r);
+  }
+}
+
+// Draw Washi Tape Strip at specific coordinates
+export function drawWashiTape(
+  ctx: CanvasRenderingContext2D,
+  cx: number, cy: number,
+  length: number, width: number,
+  angleDeg: number,
+  color: string = "rgba(244, 114, 182, 0.85)"
+) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((angleDeg * Math.PI) / 180);
+
+  const halfL = length / 2;
+  const halfW = width / 2;
+
+  ctx.shadowColor = "rgba(0, 0, 0, 0.14)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 2;
+
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.88;
+
+  // Draw tape body with zigzag torn ends
+  ctx.beginPath();
+  ctx.moveTo(-halfL, -halfW);
+  // Top straight edge
+  ctx.lineTo(halfL, -halfW);
+  // Right zigzag torn edge
+  ctx.lineTo(halfL + 3, -halfW + width * 0.25);
+  ctx.lineTo(halfL - 2, -halfW + width * 0.5);
+  ctx.lineTo(halfL + 3, -halfW + width * 0.75);
+  ctx.lineTo(halfL, halfW);
+  // Bottom straight edge
+  ctx.lineTo(-halfL, halfW);
+  // Left zigzag torn edge
+  ctx.lineTo(-halfL - 3, halfW - width * 0.25);
+  ctx.lineTo(-halfL + 2, halfW - width * 0.5);
+  ctx.lineTo(-halfL - 3, halfW - width * 0.75);
+  ctx.closePath();
+  ctx.fill();
+
+  // Subtle tape paper fibers / texture
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// Draw Postage Stamp Perforations along outer perimeter
+export function drawStampPerforations(
+  ctx: CanvasRenderingContext2D,
+  w: number, h: number,
+  holeR: number = 6,
+  gap: number = 18
+) {
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.globalCompositeOperation = "destination-out";
+
+  // Top & Bottom edges
+  for (let x = gap; x < w - gap / 2; x += gap) {
+    ctx.beginPath();
+    ctx.arc(x, 0, holeR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x, h, holeR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Left & Right edges
+  for (let y = gap; y < h - gap / 2; y += gap) {
+    ctx.beginPath();
+    ctx.arc(0, y, holeR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(w, y, holeR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// Draw Wavy Ribbon Cutout decoration
+export function drawWavyBorderDecor(
+  ctx: CanvasRenderingContext2D,
+  w: number, h: number,
+  color: string = "rgba(255, 255, 255, 0.7)"
+) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+
+  // Left wavy accent
+  const step = 20;
+  for (let y = 30; y < h - 120; y += step) {
+    const x = 12 + Math.sin(y / 10) * 4;
+    if (y === 30) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Right wavy accent
+  ctx.beginPath();
+  for (let y = 30; y < h - 120; y += step) {
+    const x = w - 12 + Math.sin(y / 10) * 4;
+    if (y === 30) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ===========================
 // Border & Background Drawing
 // ===========================
@@ -184,16 +337,18 @@ function drawInnerShadow(
 function drawEmptySlot(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number,
-  slotNumber: number, innerRadius: number
+  slotNumber: number, innerRadius: number,
+  shapeStyle?: string
 ) {
   ctx.save();
-  roundRect(ctx, x, y, w, h, innerRadius);
+  drawSlotPath(ctx, x, y, w, h, innerRadius, shapeStyle);
   ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
   ctx.fill();
 
   ctx.strokeStyle = "rgba(45, 27, 78, 0.35)";
   ctx.lineWidth = 2.5;
   ctx.setLineDash([8, 6]);
+  drawSlotPath(ctx, x, y, w, h, innerRadius, shapeStyle);
   ctx.stroke();
   ctx.setLineDash([]);
 
@@ -485,9 +640,12 @@ export async function renderFixed4CutStrip(
     drawFrameBorder(ctx, frame, geom.baseWidth, geom.baseHeight);
   }
 
-  // 2. Decorative Effects
+  // 2. Decorative Effects & Artistic Borders
   if (frame.hasSprockets) {
     drawSprocketHoles(ctx, geom.baseWidth, geom.baseHeight);
+  }
+  if (frame.shapeStyle === "wave") {
+    drawWavyBorderDecor(ctx, geom.baseWidth, geom.baseHeight);
   }
   if (frame.hasGlitter || frame.hasSparkles) {
     drawSparkleGlitter(ctx, geom.baseWidth, geom.baseHeight);
@@ -502,13 +660,38 @@ export async function renderFixed4CutStrip(
     filterParts.push(`contrast(${opts.contrast}%)`);
   const combinedFilter = filterParts.join(" ") || "none";
 
-  // 4. Render Photo Slots based on geometry
+  // 4. Render Photo Slots based on geometry and artistic shape
+  const shapeStyle = frame.shapeStyle;
+  const TILT_ANGLES = [-2.0, 1.8, -1.4, 2.0, -1.8, 1.5];
+
   geom.slots.forEach((slot, i) => {
     const photoImg = slotImages[i];
+    const isTilted = shapeStyle === "collage-tilt";
+    const tiltDeg = isTilted ? TILT_ANGLES[i % TILT_ANGLES.length] : 0;
+    const cx = slot.x + slot.w / 2;
+    const cy = slot.y + slot.h / 2;
+
+    ctx.save();
+
+    if (isTilted) {
+      ctx.translate(cx, cy);
+      ctx.rotate((tiltDeg * Math.PI) / 180);
+      ctx.translate(-cx, -cy);
+
+      // Draw white polaroid backing card with soft drop shadow
+      ctx.save();
+      ctx.shadowColor = "rgba(0, 0, 0, 0.18)";
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+      ctx.fillStyle = "#ffffff";
+      roundRect(ctx, slot.x - 7, slot.y - 7, slot.w + 14, slot.h + 14, 10);
+      ctx.fill();
+      ctx.restore();
+    }
 
     if (photoImg) {
       ctx.save();
-      roundRect(ctx, slot.x, slot.y, slot.w, slot.h, frame.innerRadius);
+      drawSlotPath(ctx, slot.x, slot.y, slot.w, slot.h, frame.innerRadius, shapeStyle);
       ctx.clip();
       drawImageCover(ctx, photoImg, slot.x, slot.y, slot.w, slot.h, combinedFilter);
       ctx.restore();
@@ -516,10 +699,24 @@ export async function renderFixed4CutStrip(
       if (frame.hasInnerShadow) {
         drawInnerShadow(ctx, slot.x, slot.y, slot.w, slot.h, frame.innerRadius);
       }
+
+      // Washi Tape Artistic Accent across corners
+      if (shapeStyle === "washi-tape") {
+        const tapeColor = frame.washiColor || "rgba(244, 114, 182, 0.85)";
+        drawWashiTape(ctx, slot.x + 18, slot.y + 12, 60, 20, -26, tapeColor);
+        drawWashiTape(ctx, slot.x + slot.w - 18, slot.y + slot.h - 12, 60, 20, -26, tapeColor);
+      }
     } else {
-      drawEmptySlot(ctx, slot.x, slot.y, slot.w, slot.h, i + 1, frame.innerRadius);
+      drawEmptySlot(ctx, slot.x, slot.y, slot.w, slot.h, i + 1, frame.innerRadius, shapeStyle);
     }
+
+    ctx.restore();
   });
+
+  // Postage Stamp Perforation Effect along borders
+  if (shapeStyle === "stamp") {
+    drawStampPerforations(ctx, geom.baseWidth, geom.baseHeight, 7, 20);
+  }
 
   // 5. Draw Footer / Header Stamp
   drawFrameStamp(

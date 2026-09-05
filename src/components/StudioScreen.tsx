@@ -326,8 +326,16 @@ export default function StudioScreen() {
                     top: `${topPct}%`,
                     width: `${widthPct}%`,
                     height: `${heightPct}%`,
+                    borderRadius:
+                      selectedFrame.shapeStyle === "arch"
+                        ? "42% 42% 14px 14px / 28% 28% 14px 14px"
+                        : "12px",
+                    transform:
+                      selectedFrame.shapeStyle === "collage-tilt"
+                        ? `rotate(${[-2, 1.8, -1.4, 2, -1.8, 1.5][slotIdx % 6]}deg)`
+                        : "none",
                   }}
-                  className={`rounded-xl transition-all cursor-pointer flex items-center justify-center pointer-events-auto ${
+                  className={`transition-all cursor-pointer flex items-center justify-center pointer-events-auto ${
                     isTarget
                       ? "ring-4 ring-[#ff4d6d] ring-offset-2 bg-[#ff4d6d]/15"
                       : "hover:ring-2 hover:ring-[#764ba2]/60"

@@ -296,10 +296,10 @@ export const usePhotoboothStore = create<PhotoboothState>()(
       },
 
       // Camera Settings
-      selectedCameraDeviceId: null,
+        selectedCameraDeviceId: null,
       setSelectedCameraDeviceId: (id) => set({ selectedCameraDeviceId: id }),
       isFlashing: false,
-      isMirrored: true,
+      isMirrored: false,
       autoCaptureTimer: 3,
       autoSequenceEnabled: true,
       soundEnabled: true,
@@ -403,7 +403,7 @@ export const usePhotoboothStore = create<PhotoboothState>()(
       },
     }),
     {
-      name: "kikobooth-storage-v2",
+      name: "kikobooth-storage-v3",
       partialize: (state) => ({
         savedGalleries: state.savedGalleries,
         soundEnabled: state.soundEnabled,

@@ -1,11 +1,14 @@
 // Frame definitions with rich visual properties
 // Each frame is rendered on canvas with special effects and fixed-proportions photobooth strip slots
 
+export type FrameShapeStyle = "classic" | "arch" | "washi-tape" | "stamp" | "wave" | "collage-tilt";
+
 export interface FrameDef {
   id: string;
   name: string;
   emoji: string;
-  category: "classic" | "korean" | "y2k" | "film" | "cute" | "minimal" | "dark";
+  category: "classic" | "korean" | "y2k" | "film" | "cute" | "minimal" | "dark" | "artistic";
+  shapeStyle?: FrameShapeStyle; // Bentuk Seni: arch, washi tape, stamp, wave, collage-tilt
   cornerColors: { tl: string; tr: string; bl: string; br: string };
   labelBg: string;
   labelText: string;
@@ -22,6 +25,7 @@ export interface FrameDef {
   patternType?: "none" | "dots" | "hearts" | "stars" | "stripes" | "checkered";
   accentColor?: string;
   tagline?: string;
+  washiColor?: string;
 }
 
 export const FRAMES: FrameDef[] = [
@@ -367,10 +371,137 @@ export const FRAMES: FrameDef[] = [
     solidColor: "#f7f1e5",
     tagline: "Wedding & Celebration",
   },
+  // ===== ARTISTIC & UNIQUE SHAPES =====
+  {
+    id: "seoul-arch-dome",
+    name: "Seoul Cathedral Arch",
+    emoji: "🏛️",
+    category: "artistic",
+    shapeStyle: "arch",
+    cornerColors: { tl: "#fdfbf7", tr: "#fcf6ed", bl: "#faeedb", br: "#f7e5c8" },
+    labelBg: "#f5e6ce",
+    labelText: "#78350f",
+    borderWidth: 32,
+    borderRadius: 24,
+    innerRadius: 18,
+    gap: 16,
+    fontFamily: "'Georgia', serif",
+    hasGlitter: true,
+    hasSparkles: true,
+    hasSprockets: false,
+    hasInnerShadow: false,
+    solidColor: "#faf5ef",
+    tagline: "Kubah Lengkung Artistik",
+  },
+  {
+    id: "artistic-arch-lilac",
+    name: "Lilac Gallery Dome",
+    emoji: "💜",
+    category: "artistic",
+    shapeStyle: "arch",
+    cornerColors: { tl: "#f5f3ff", tr: "#ede9fe", bl: "#ddd6fe", br: "#c4b5fd" },
+    labelBg: "#f3e8ff",
+    labelText: "#581c87",
+    borderWidth: 32,
+    borderRadius: 24,
+    innerRadius: 18,
+    gap: 16,
+    fontFamily: "'Nunito', sans-serif",
+    hasGlitter: true,
+    hasSparkles: true,
+    hasSprockets: false,
+    hasInnerShadow: false,
+    tagline: "Kubah Seni Seoul Ungu",
+  },
+  {
+    id: "scrapbook-washi-tape",
+    name: "Washi Tape Scrapbook",
+    emoji: "📎",
+    category: "artistic",
+    shapeStyle: "washi-tape",
+    cornerColors: { tl: "#fffbf0", tr: "#fff7e6", bl: "#fff1d6", br: "#ffe8be" },
+    labelBg: "#ffedd5",
+    labelText: "#9a3412",
+    borderWidth: 34,
+    borderRadius: 16,
+    innerRadius: 8,
+    gap: 18,
+    fontFamily: "'Courier New', monospace",
+    hasGlitter: false,
+    hasSparkles: false,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    solidColor: "#fffbf2",
+    tagline: "Kolase Selotip Scrapbook",
+    washiColor: "#f472b6",
+  },
+  {
+    id: "vintage-postage-stamp",
+    name: "Art Postage Stamp",
+    emoji: "📮",
+    category: "artistic",
+    shapeStyle: "stamp",
+    cornerColors: { tl: "#f8fafc", tr: "#f1f5f9", bl: "#e2e8f0", br: "#cbd5e1" },
+    labelBg: "#e2e8f0",
+    labelText: "#334155",
+    borderWidth: 36,
+    borderRadius: 8,
+    innerRadius: 6,
+    gap: 16,
+    fontFamily: "'Courier New', monospace",
+    hasGlitter: false,
+    hasSparkles: false,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    solidColor: "#f8fafc",
+    tagline: "Perangko Seni Perforasi",
+  },
+  {
+    id: "wavy-pastel-ribbon",
+    name: "Wavy Organic Ribbon",
+    emoji: "〰️",
+    category: "artistic",
+    shapeStyle: "wave",
+    cornerColors: { tl: "#fce7f3", tr: "#fbcfe8", bl: "#f472b6", br: "#db2777" },
+    labelBg: "#fdf2f8",
+    labelText: "#be185d",
+    borderWidth: 34,
+    borderRadius: 24,
+    innerRadius: 16,
+    gap: 14,
+    fontFamily: "'Nunito', sans-serif",
+    hasGlitter: true,
+    hasSparkles: true,
+    hasSprockets: false,
+    hasInnerShadow: false,
+    tagline: "Tepi Gelombang Estetik",
+  },
+  {
+    id: "polaroid-tilted-collage",
+    name: "Tilted Art Collage",
+    emoji: "🎨",
+    category: "artistic",
+    shapeStyle: "collage-tilt",
+    cornerColors: { tl: "#fafafa", tr: "#f4f4f5", bl: "#e4e4e7", br: "#d4d4d8" },
+    labelBg: "#f4f4f5",
+    labelText: "#18181b",
+    borderWidth: 36,
+    borderRadius: 14,
+    innerRadius: 6,
+    gap: 18,
+    fontFamily: "'Georgia', serif",
+    hasGlitter: false,
+    hasSparkles: false,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    solidColor: "#ffffff",
+    tagline: "Kolase Seni Miring Polaroid",
+  },
 ];
 
 export const FRAME_CATEGORIES = [
   { id: "all", name: "Semua Frame", emoji: "✨" },
+  { id: "artistic", name: "Bentuk Seni & Unik", emoji: "🎨" },
   { id: "korean", name: "Korean 4-Cut", emoji: "🇰🇷" },
   { id: "y2k", name: "Y2K & Cyber", emoji: "💿" },
   { id: "film", name: "Vintage Film", emoji: "🎞️" },
