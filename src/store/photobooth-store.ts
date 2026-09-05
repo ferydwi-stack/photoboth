@@ -3,7 +3,7 @@ import { PlacedSticker } from "@/lib/stickers";
 import { FrameDef, FRAMES } from "@/lib/frames";
 
 export type AppStep = "landing" | "camera" | "frame-select" | "editor" | "preview";
-export type LayoutMode = "single" | "strip-3" | "strip-4" | "grid-4";
+export type LayoutMode = "single" | "strip-3" | "strip-4" | "grid-4" | "print-2x6";
 
 interface PhotoboothState {
   step: AppStep;
@@ -90,6 +90,6 @@ export const usePhotoboothStore = create<PhotoboothState>((set, get) => ({
   reset: () => set({ ...INITIAL }),
   getRequiredPhotoCount: () => {
     const m = get().layoutMode;
-    return m === "single" ? 1 : m === "strip-3" ? 3 : 4;
+    return m === "single" ? 1 : m === "strip-3" ? 3 : m === "print-2x6" ? 3 : 4;
   },
 }));

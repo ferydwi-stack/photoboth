@@ -7,7 +7,7 @@ import { PHOTO_FILTERS } from "@/lib/filters";
 import { useToastStore } from "@/components/Toast";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
 import { playSuccess } from "@/lib/sounds";
-import { Download, Share2, Home, ArrowLeft, RotateCcw, Loader2 } from "lucide-react";
+import { Download, Share2, Home, ArrowLeft, RotateCcw, Loader2, Heart, X } from "lucide-react";
 
 export default function PreviewScreen() {
   const {
@@ -21,6 +21,7 @@ export default function PreviewScreen() {
   const { confirm, dialog } = useConfirmDialog();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rendering, setRendering] = useState(true);
+  const [showDonation, setShowDonation] = useState(false);
 
   const renderPhoto = useCallback(async () => {
     const canvas = canvasRef.current;
@@ -52,8 +53,13 @@ export default function PreviewScreen() {
     if (canvasRef.current) {
       downloadCanvas(canvasRef.current, generateFilename("KikoBooth"));
       addToast("Foto berhasil disimpan!", "success");
+      setShowDonation(true);
     }
   };
+
+  const closeDonation = () => setShowDonation(false);
+  const donationUrl = "/qris.jpeg";
+  const waUrl = "https://wa.me/?text=Saya%20baru%20download%20foto%20dari%20KikoBooth%20%F0%9F%92%96";
 
   const handleShare = async () => {
     const canvas = canvasRef.current; if (!canvas) return;
@@ -113,6 +119,41 @@ export default function PreviewScreen() {
           </button>
         </div>
       </div>
+
+      {showDonation && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/55 px-3 py-4" onClick={closeDonation}>
+          <div className="card-cartoon w-full max-w-sm overflow-hidden animate-bounce-in" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 bg-gradient-to-r from-[#ff9a9e] to-[#764ba2] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2 font-black text-lg">
+                <Heart className="w-5 h-5" /> Dukung KikoBooth
+              </div>
+              <button onClick={closeDonation} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-[#2d1b4e] font-semibold leading-relaxed">
+                Kalau fotonya suka, boleh dukung developernya biar frame dan fitur-nya makin bagus.
+              </p>
+              <div className="rounded-2xl border-2 border-dashed border-[#c4b5d4] bg-[#faf5ff] p-3 flex items-center justify-center min-h-[220px]">
+                <div className="text-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={donationUrl} alt="QRIS donation" className="max-h-52 mx-auto rounded-xl shadow-md object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  <p className="text-xs text-[#8b6cb0] mt-2">Jika QR tidak tampil, gunakan link/transfer manual.</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <a href={waUrl} target="_blank" rel="noreferrer" className="flex-1 btn-cartoon btn-cartoon-primary text-sm py-3">
+                  Kirim Pesan
+                </a>
+                <button onClick={closeDonation} className="flex-1 btn-cartoon btn-cartoon-ghost text-sm py-3">
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

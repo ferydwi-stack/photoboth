@@ -2,12 +2,12 @@
 
 import { usePhotoboothStore, type LayoutMode } from "@/store/photobooth-store";
 import { FRAMES, FRAME_CATEGORIES } from "@/lib/frames";
-import { Camera, Sparkles, Film, Grid2X2, ImageIcon, Aperture } from "lucide-react";
+import { Camera, Sparkles, Film, Grid2X2, ImageIcon, Aperture, Printer } from "lucide-react";
 
 const LAYOUT_OPTIONS: { id: LayoutMode; label: string; icon: React.ReactNode; count: number }[] = [
   { id: "single", label: "Sekali Jepret", icon: <Camera className="w-7 h-7" />, count: 1 },
   { id: "strip-3", label: "Strip 3", icon: <Film className="w-7 h-7" />, count: 3 },
-  { id: "strip-4", label: "Strip 4", icon: <Film className="w-7 h-7" />, count: 4 },
+  { id: "print-2x6", label: "Cetak 2x6", icon: <Printer className="w-7 h-7" />, count: 3 },
   { id: "grid-4", label: "Grid 2x2", icon: <Grid2X2 className="w-7 h-7" />, count: 4 },
 ];
 
