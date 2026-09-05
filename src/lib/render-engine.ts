@@ -1,5 +1,6 @@
 import { FrameDef } from "@/lib/frames";
 import { PlacedSticker } from "@/lib/stickers";
+import { LayoutType } from "@/store/photobooth-store";
 
 // ===========================
 // Color & Gradient Utilities
@@ -70,7 +71,6 @@ function drawFrameBorder(
     roundRect(ctx, 0, 0, w, h, frame.borderRadius);
     ctx.fill();
   } else {
-    // Bilinear gradient interpolation across 4 corners for ultra smooth aesthetic pastel
     try {
       const imgData = ctx.createImageData(w, h);
       const tl = hexToRgb(frame.cornerColors.tl);
@@ -103,7 +103,6 @@ function drawFrameBorder(
       ctx.drawImage(tmp, 0, 0);
       ctx.restore();
     } catch {
-      // Fallback to simple linear gradient
       const grad = ctx.createLinearGradient(0, 0, w, h);
       grad.addColorStop(0, frame.cornerColors.tl);
       grad.addColorStop(1, frame.cornerColors.br);
@@ -114,7 +113,7 @@ function drawFrameBorder(
   }
 }
 
-// Draw 35mm film strip sprockets (holes) on left & right sides
+// Draw 35mm film strip sprockets (holes) on left & right
 function drawSprocketHoles(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
@@ -181,7 +180,7 @@ function drawInnerShadow(
   ctx.restore();
 }
 
-// Draw empty slot placeholder when slot has no photo yet
+// Draw empty slot placeholder
 function drawEmptySlot(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number,
@@ -198,16 +197,15 @@ function drawEmptySlot(
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Slot number & instruction text
   ctx.fillStyle = "rgba(45, 27, 78, 0.6)";
-  ctx.font = "bold 18px 'Nunito', sans-serif";
+  ctx.font = "bold 16px 'Nunito', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(`+ Slot ${slotNumber} (Pilih Foto)`, x + w / 2, y + h / 2);
   ctx.restore();
 }
 
-// Draw image covering the slot perfectly without stretching (object-fit: cover)
+// Draw image covering the slot without stretching (object-fit: cover)
 function drawImageCover(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -223,11 +221,9 @@ function drawImageCover(
   let sx = 0, sy = 0, sw = imgW, sh = imgH;
 
   if (imgRatio > targetRatio) {
-    // Image is wider than slot: crop left & right
     sw = imgH * targetRatio;
     sx = (imgW - sw) / 2;
   } else {
-    // Image is taller than slot: crop top & bottom
     sh = imgW / targetRatio;
     sy = (imgH - sh) / 2;
   }
@@ -251,7 +247,6 @@ function drawFrameStamp(
   showDate: boolean
 ) {
   ctx.save();
-  // Semi-transparent label background or solid
   ctx.fillStyle = frame.labelBg;
   roundRect(ctx, frame.borderWidth / 2, labelY, w - frame.borderWidth, labelH - 8, frame.borderRadius / 1.5);
   ctx.fill();
@@ -262,16 +257,13 @@ function drawFrameStamp(
 
   const centerY = labelY + labelH / 2;
 
-  // Title
   ctx.font = `900 24px ${frame.fontFamily}`;
   ctx.fillText(title || "KikoBooth", w / 2, centerY - 14);
 
-  // Subtitle + Tagline
   ctx.font = `700 13px ${frame.fontFamily}`;
   ctx.globalAlpha = 0.8;
   ctx.fillText(subtitle || "Seoul Photo Studio", w / 2, centerY + 8);
 
-  // Date
   if (showDate) {
     const dateStr = new Date().toLocaleDateString("id-ID", {
       day: "numeric",
@@ -331,11 +323,129 @@ export async function loadStickerImages(stickers: PlacedSticker[]): Promise<Map<
 }
 
 // ===========================
+// Layout Geometry Computation
+// ===========================
+
+export interface LayoutGeometry {
+  baseWidth: number;
+  baseHeight: number;
+  slots: { x: number; y: number; w: number; h: number }[];
+  labelY: number;
+  labelH: number;
+}
+
+export function computeLayoutGeometry(
+  layout: LayoutType,
+  frame: FrameDef
+): LayoutGeometry {
+  const bw = frame.borderWidth;
+  const gap = frame.gap;
+  const labelH = 88;
+
+  switch (layout) {
+    case "strip-4": {
+      // 1 column x 4 rows
+      const sw = 440, sh = 310;
+      const baseW = sw + bw * 2;
+      const baseH = bw * 2 + sh * 4 + gap * 3 + labelH;
+      const slots = [0, 1, 2, 3].map((i) => ({
+        x: bw,
+        y: bw + i * (sh + gap),
+        w: sw,
+        h: sh,
+      }));
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "grid-4": {
+      // 2 columns x 2 rows (Photoism / Haru Film Square)
+      const sw = 390, sh = 280;
+      const baseW = bw * 2 + sw * 2 + gap;
+      const baseH = bw * 2 + sh * 2 + gap + labelH;
+      const slots = [
+        { x: bw, y: bw, w: sw, h: sh },
+        { x: bw + sw + gap, y: bw, w: sw, h: sh },
+        { x: bw, y: bw + sh + gap, w: sw, h: sh },
+        { x: bw + sw + gap, y: bw + sh + gap, w: sw, h: sh },
+      ];
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "strip-3": {
+      // 1 column x 3 rows
+      const sw = 440, sh = 310;
+      const baseW = sw + bw * 2;
+      const baseH = bw * 2 + sh * 3 + gap * 2 + labelH;
+      const slots = [0, 1, 2].map((i) => ({
+        x: bw,
+        y: bw + i * (sh + gap),
+        w: sw,
+        h: sh,
+      }));
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "grid-6": {
+      // 2 columns x 3 rows (Poster)
+      const sw = 390, sh = 275;
+      const baseW = bw * 2 + sw * 2 + gap;
+      const baseH = bw * 2 + sh * 3 + gap * 2 + labelH;
+      const slots = [
+        { x: bw, y: bw, w: sw, h: sh },
+        { x: bw + sw + gap, y: bw, w: sw, h: sh },
+        { x: bw, y: bw + sh + gap, w: sw, h: sh },
+        { x: bw + sw + gap, y: bw + sh + gap, w: sw, h: sh },
+        { x: bw, y: bw + (sh + gap) * 2, w: sw, h: sh },
+        { x: bw + sw + gap, y: bw + (sh + gap) * 2, w: sw, h: sh },
+      ];
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "duo-2": {
+      // 1 column x 2 rows (Landscape Duo)
+      const sw = 500, sh = 340;
+      const baseW = sw + bw * 2;
+      const baseH = bw * 2 + sh * 2 + gap + labelH;
+      const slots = [0, 1].map((i) => ({
+        x: bw,
+        y: bw + i * (sh + gap),
+        w: sw,
+        h: sh,
+      }));
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "single-1": {
+      // 1 column x 1 row (Polaroid)
+      const sw = 500, sh = 400;
+      const baseW = sw + bw * 2;
+      const baseH = bw * 2 + sh + labelH + 20;
+      const slots = [{ x: bw, y: bw, w: sw, h: sh }];
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    default: {
+      const sw = 440, sh = 310;
+      const baseW = sw + bw * 2;
+      const baseH = bw * 2 + sh * 4 + gap * 3 + labelH;
+      const slots = [0, 1, 2, 3].map((i) => ({
+        x: bw,
+        y: bw + i * (sh + gap),
+        w: sw,
+        h: sh,
+      }));
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+  }
+}
+
+// ===========================
 // Public Rendering Options & API
 // ===========================
 
 export interface RenderStripOpts {
   frame: FrameDef;
+  layout?: LayoutType;
   title?: string;
   subtitle?: string;
   showDate?: boolean;
@@ -343,20 +453,12 @@ export interface RenderStripOpts {
   brightness?: number;
   contrast?: number;
   stickers?: PlacedSticker[];
-  scaleFactor?: number; // 1 for preview, 2.5 for high-res export
+  scaleFactor?: number;
 }
 
-// Fixed dimensions for the Photobooth Strip
-export const STRIP_CONFIG = {
-  slotWidth: 440,
-  slotHeight: 310,
-  labelHeight: 88,
-  totalSlots: 4,
-};
-
 /**
- * Render the fixed-size 4-Cut Photobooth Strip to canvas
- * Strictly maintains slot shape and photo aspect ratio!
+ * Render Photobooth Strip/Grid to canvas
+ * Strictly maintains slot shape and photo aspect ratio across all layouts!
  */
 export async function renderFixed4CutStrip(
   canvas: HTMLCanvasElement,
@@ -366,38 +468,29 @@ export async function renderFixed4CutStrip(
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  const { frame, scaleFactor = 1 } = opts;
-  const bw = frame.borderWidth;
-  const gap = frame.gap;
-  const labelH = STRIP_CONFIG.labelHeight;
-
-  const baseW = STRIP_CONFIG.slotWidth + bw * 2;
-  const baseH =
-    bw * 2 +
-    STRIP_CONFIG.slotHeight * STRIP_CONFIG.totalSlots +
-    gap * (STRIP_CONFIG.totalSlots - 1) +
-    labelH;
+  const { frame, layout = "strip-4", scaleFactor = 1 } = opts;
+  const geom = computeLayoutGeometry(layout, frame);
 
   // Set real canvas dimensions with scaling
-  canvas.width = Math.round(baseW * scaleFactor);
-  canvas.height = Math.round(baseH * scaleFactor);
+  canvas.width = Math.round(geom.baseWidth * scaleFactor);
+  canvas.height = Math.round(geom.baseHeight * scaleFactor);
 
   ctx.save();
   ctx.scale(scaleFactor, scaleFactor);
 
   // 1. Draw Border & Background
   if (frame.patternType === "checkered") {
-    drawCheckeredPattern(ctx, baseW, baseH, frame.cornerColors.tl, frame.cornerColors.tr);
+    drawCheckeredPattern(ctx, geom.baseWidth, geom.baseHeight, frame.cornerColors.tl, frame.cornerColors.tr);
   } else {
-    drawFrameBorder(ctx, frame, baseW, baseH);
+    drawFrameBorder(ctx, frame, geom.baseWidth, geom.baseHeight);
   }
 
   // 2. Decorative Effects
   if (frame.hasSprockets) {
-    drawSprocketHoles(ctx, baseW, baseH);
+    drawSprocketHoles(ctx, geom.baseWidth, geom.baseHeight);
   }
   if (frame.hasGlitter || frame.hasSparkles) {
-    drawSparkleGlitter(ctx, baseW, baseH);
+    drawSparkleGlitter(ctx, geom.baseWidth, geom.baseHeight);
   }
 
   // 3. Build Filter CSS
@@ -409,59 +502,32 @@ export async function renderFixed4CutStrip(
     filterParts.push(`contrast(${opts.contrast}%)`);
   const combinedFilter = filterParts.join(" ") || "none";
 
-  // 4. Render the 4 Fixed Photo Slots
-  const slotX = bw;
-  for (let i = 0; i < STRIP_CONFIG.totalSlots; i++) {
-    const slotY = bw + i * (STRIP_CONFIG.slotHeight + gap);
+  // 4. Render Photo Slots based on geometry
+  geom.slots.forEach((slot, i) => {
     const photoImg = slotImages[i];
 
     if (photoImg) {
       ctx.save();
-      roundRect(ctx, slotX, slotY, STRIP_CONFIG.slotWidth, STRIP_CONFIG.slotHeight, frame.innerRadius);
+      roundRect(ctx, slot.x, slot.y, slot.w, slot.h, frame.innerRadius);
       ctx.clip();
-      drawImageCover(
-        ctx,
-        photoImg,
-        slotX,
-        slotY,
-        STRIP_CONFIG.slotWidth,
-        STRIP_CONFIG.slotHeight,
-        combinedFilter
-      );
+      drawImageCover(ctx, photoImg, slot.x, slot.y, slot.w, slot.h, combinedFilter);
       ctx.restore();
 
       if (frame.hasInnerShadow) {
-        drawInnerShadow(
-          ctx,
-          slotX,
-          slotY,
-          STRIP_CONFIG.slotWidth,
-          STRIP_CONFIG.slotHeight,
-          frame.innerRadius
-        );
+        drawInnerShadow(ctx, slot.x, slot.y, slot.w, slot.h, frame.innerRadius);
       }
     } else {
-      // Empty slot placeholder
-      drawEmptySlot(
-        ctx,
-        slotX,
-        slotY,
-        STRIP_CONFIG.slotWidth,
-        STRIP_CONFIG.slotHeight,
-        i + 1,
-        frame.innerRadius
-      );
+      drawEmptySlot(ctx, slot.x, slot.y, slot.w, slot.h, i + 1, frame.innerRadius);
     }
-  }
+  });
 
   // 5. Draw Footer / Header Stamp
-  const labelY = baseH - bw - labelH;
   drawFrameStamp(
     ctx,
     frame,
-    baseW,
-    labelY,
-    labelH,
+    geom.baseWidth,
+    geom.labelY,
+    geom.labelH,
     opts.title || "KikoBooth",
     opts.subtitle || "Seoul Photo Studio",
     opts.showDate !== false
@@ -470,7 +536,7 @@ export async function renderFixed4CutStrip(
   // 6. Draw Stickers & Emojis
   if (opts.stickers && opts.stickers.length > 0) {
     const stickerImgs = await loadStickerImages(opts.stickers);
-    await drawPlacedStickers(ctx, opts.stickers, baseW, baseH, stickerImgs);
+    await drawPlacedStickers(ctx, opts.stickers, geom.baseWidth, geom.baseHeight, stickerImgs);
   }
 
   ctx.restore();
@@ -498,5 +564,5 @@ export function downloadCanvas(canvas: HTMLCanvasElement, filename: string) {
 // Utility: Format filename
 export function generateFilename(name: string): string {
   const ts = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
-  return `${name.replace(/\s+/g, "-").toLowerCase()}_4cut_${ts}.png`;
+  return `${name.replace(/\s+/g, "-").toLowerCase()}_photobooth_${ts}.png`;
 }

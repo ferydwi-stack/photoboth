@@ -30,6 +30,7 @@ export default function PreviewScreen() {
   const {
     frameSlots,
     selectedFrame,
+    layoutType,
     customTitle,
     customSubtitle,
     showDateStamp,
@@ -78,6 +79,7 @@ export default function PreviewScreen() {
 
         const opts: RenderStripOpts = {
           frame: selectedFrame,
+          layout: layoutType,
           title: customTitle,
           subtitle: customSubtitle,
           showDate: showDateStamp,
@@ -116,6 +118,7 @@ export default function PreviewScreen() {
   }, [
     frameSlots,
     selectedFrame,
+    layoutType,
     customTitle,
     customSubtitle,
     showDateStamp,

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { usePhotoboothStore } from "@/store/photobooth-store";
+import { usePhotoboothStore, LAYOUT_OPTIONS } from "@/store/photobooth-store";
 import { FRAMES, FRAME_CATEGORIES } from "@/lib/frames";
 import { STICKERS, STICKER_CATEGORIES, Sticker, PlacedSticker } from "@/lib/stickers";
 import { PHOTO_FILTERS } from "@/lib/filters";
 import {
   renderFixed4CutStrip,
   loadImage,
-  STRIP_CONFIG,
+  computeLayoutGeometry,
   RenderStripOpts,
 } from "@/lib/render-engine";
 import { playClick, playSuccess } from "@/lib/sounds";
@@ -28,9 +28,10 @@ import {
   RotateCw,
   ZoomIn,
   Plus,
+  LayoutGrid,
 } from "lucide-react";
 
-type StudioTab = "photos" | "frames" | "stickers" | "filters" | "text";
+type StudioTab = "layout" | "photos" | "frames" | "stickers" | "filters" | "text";
 
 export default function StudioScreen() {
   const {
@@ -43,6 +44,8 @@ export default function StudioScreen() {
     setSelectedSlotIndex,
     selectedFrame,
     setSelectedFrame,
+    layoutType,
+    setLayoutType,
     placedStickers,
     addSticker,
     updateSticker,
@@ -65,7 +68,7 @@ export default function StudioScreen() {
   } = usePhotoboothStore();
 
   const { confirm, dialog } = useConfirmDialog();
-  const [activeTab, setActiveTab] = useState<StudioTab>("photos");
+  const [activeTab, setActiveTab] = useState<StudioTab>("layout");
   const [frameCategory, setFrameCategory] = useState<string>("all");
   const [stickerCategory, setStickerCategory] = useState<string>("emoji");
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
@@ -84,13 +87,15 @@ export default function StudioScreen() {
   // Filter stickers by category
   const filteredStickers = STICKERS.filter((s) => s.category === stickerCategory);
 
+  // Compute layout geometry for interactive overlay
+  const geom = computeLayoutGeometry(layoutType, selectedFrame);
+
   // Render the canvas whenever slots, frames, or stickers change
   const updateCanvas = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     try {
-      // Load all slot images in parallel (or null if empty)
       const slotImages = await Promise.all(
         frameSlots.map(async (url) => {
           if (!url) return null;
@@ -106,6 +111,7 @@ export default function StudioScreen() {
 
       const opts: RenderStripOpts = {
         frame: selectedFrame,
+        layout: layoutType,
         title: customTitle,
         subtitle: customSubtitle,
         showDate: showDateStamp,
@@ -123,6 +129,7 @@ export default function StudioScreen() {
   }, [
     frameSlots,
     selectedFrame,
+    layoutType,
     customTitle,
     customSubtitle,
     showDateStamp,
@@ -140,16 +147,13 @@ export default function StudioScreen() {
   const handleSelectPhotoFromTray = (photoUrl: string) => {
     playClick();
     if (selectedSlotIndex !== null) {
-      // If a slot is currently highlighted, assign directly to it
       assignPhotoToSlot(selectedSlotIndex, photoUrl);
       setSelectedSlotIndex(null);
     } else {
-      // Find first empty slot, or replace slot 0 if all filled
       const emptyIndex = frameSlots.findIndex((s) => s === null);
       if (emptyIndex !== -1) {
         assignPhotoToSlot(emptyIndex, photoUrl);
       } else {
-        // Highlight slot 0 by default so user knows they can pick
         assignPhotoToSlot(0, photoUrl);
       }
     }
@@ -236,152 +240,146 @@ export default function StudioScreen() {
 
   return (
     <div
-      className="flex flex-col h-screen overflow-hidden select-none"
+      className="flex flex-col min-h-[100dvh] overflow-hidden select-none"
       style={{ background: "linear-gradient(180deg, #fbf7ff 0%, #f0e6ff 100%)" }}
     >
       {dialog}
 
       {/* Top Navigation Bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b-2 border-[#2d1b4e]/10 bg-white/90 backdrop-blur-md z-30">
+      <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b-2 border-[#2d1b4e]/10 bg-white/90 backdrop-blur-md z-30">
         <button
           onClick={handleBackToCamera}
-          className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost text-xs"
+          className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost text-xs py-1.5 px-2.5"
         >
-          <ChevronLeft className="w-4 h-4" /> Foto Ulang
+          <ChevronLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Foto Ulang</span>
         </button>
 
-        <div className="card-cartoon-sm px-4 py-1.5 bg-white text-center">
-          <span className="text-xs font-black uppercase tracking-wider text-[#ff4d6d]">
+        <div className="card-cartoon-sm px-3 py-1 bg-white text-center">
+          <span className="text-[10px] font-black uppercase tracking-wider text-[#ff4d6d] block">
             Studio Kustomisasi
           </span>
-          <h2 className="text-sm sm:text-base font-black text-[#2d1b4e] leading-tight">
-            Atur Slot, Frame & Stiker
+          <h2 className="text-xs sm:text-sm font-black text-[#2d1b4e] leading-tight">
+            Atur Bentuk Frame & Foto
           </h2>
         </div>
 
         <button
           onClick={handleProceedToPreview}
-          className="btn-cartoon btn-cartoon-sm btn-cartoon-primary text-xs"
+          className="btn-cartoon btn-cartoon-sm btn-cartoon-primary text-xs py-1.5 px-3"
         >
-          Selesai & Ekspor <ChevronRight className="w-4 h-4" />
+          <span>Selesai</span>
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {/* Main Studio Body: Left Strip Canvas & Right Customization Panel */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         {/* Left / Center Section: Photobooth Strip Preview & Slot Interactor */}
-        <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-6 overflow-y-auto min-h-0 relative">
-          <div className="flex items-center gap-2 mb-2 text-xs font-black text-[#764ba2] bg-white/90 px-3 py-1 rounded-full border border-[#2d1b4e]/10 shadow-sm">
-            <span>✨ Bentuk Frame & Ukuran Slot Tetap (4-Cut)</span>
+        <div className="flex-1 flex flex-col items-center justify-center p-2.5 sm:p-6 overflow-y-auto min-h-0 relative">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 text-[11px] sm:text-xs font-black text-[#764ba2] bg-white/90 px-3 py-1 rounded-full border border-[#2d1b4e]/10 shadow-sm">
+            <span>
+              ✨ Layout: {LAYOUT_OPTIONS.find((l) => l.id === layoutType)?.name} ({geom.slots.length} Slot)
+            </span>
           </div>
 
-          {/* Interactive Strip Container */}
+          {/* Interactive Canvas Container with Exact Aspect Ratio */}
           <div
             ref={stripPreviewRef}
-            className="relative rounded-2xl sm:rounded-3xl border-4 border-white shadow-[0_16px_40px_rgba(118,75,162,0.22)] overflow-hidden transition-all max-h-[74vh] object-contain flex items-center justify-center"
+            className="relative rounded-2xl sm:rounded-3xl border-3 sm:border-4 border-white shadow-[0_16px_40px_rgba(118,75,162,0.22)] overflow-hidden transition-all max-h-[62vh] sm:max-h-[74vh] object-contain flex items-center justify-center"
             style={{
-              aspectRatio: `${STRIP_CONFIG.slotWidth + selectedFrame.borderWidth * 2} / ${
-                selectedFrame.borderWidth * 2 +
-                STRIP_CONFIG.slotHeight * 4 +
-                selectedFrame.gap * 3 +
-                STRIP_CONFIG.labelHeight
-              }`,
+              aspectRatio: `${geom.baseWidth} / ${geom.baseHeight}`,
             }}
           >
             {/* The real rendered canvas */}
             <canvas ref={canvasRef} className="w-full h-full object-contain pointer-events-none" />
 
-            {/* Interactive Slot Overlay Grid (4 Slots) */}
-            <div
-              className="absolute inset-0 flex flex-col pointer-events-auto"
-              style={{
-                paddingTop: `${(selectedFrame.borderWidth / 1400) * 100}%`,
-                paddingBottom: `${((selectedFrame.borderWidth + STRIP_CONFIG.labelHeight) / 1400) * 100}%`,
-                paddingLeft: `${(selectedFrame.borderWidth / 520) * 100}%`,
-                paddingRight: `${(selectedFrame.borderWidth / 520) * 100}%`,
-                gap: `${(selectedFrame.gap / 1400) * 100}%`,
-              }}
-            >
-              {[0, 1, 2, 3].map((slotIdx) => {
-                const photoUrl = frameSlots[slotIdx];
-                const isTarget = selectedSlotIndex === slotIdx;
+            {/* Interactive Slot Overlay matching computed layout geometry */}
+            {geom.slots.map((slot, slotIdx) => {
+              const photoUrl = frameSlots[slotIdx];
+              const isTarget = selectedSlotIndex === slotIdx;
 
-                return (
-                  <div
-                    key={slotIdx}
-                    onClick={() => {
+              const leftPct = (slot.x / geom.baseWidth) * 100;
+              const topPct = (slot.y / geom.baseHeight) * 100;
+              const widthPct = (slot.w / geom.baseWidth) * 100;
+              const heightPct = (slot.h / geom.baseHeight) * 100;
+
+              return (
+                <div
+                  key={slotIdx}
+                  onClick={() => {
+                    playClick();
+                    setSelectedSlotIndex(isTarget ? null : slotIdx);
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (draggedPhotoUrl) {
                       playClick();
-                      setSelectedSlotIndex(isTarget ? null : slotIdx);
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (draggedPhotoUrl) {
-                        playClick();
-                        assignPhotoToSlot(slotIdx, draggedPhotoUrl);
-                        setDraggedPhotoUrl(null);
-                      }
-                    }}
-                    className={`flex-1 rounded-xl relative group transition-all cursor-pointer flex items-center justify-center ${
-                      isTarget
-                        ? "ring-4 ring-[#ff4d6d] ring-offset-2 bg-[#ff4d6d]/10"
-                        : "hover:ring-2 hover:ring-[#764ba2]/60"
-                    }`}
-                  >
-                    {/* Slot badge indicator */}
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white text-[10px] font-black z-20 flex items-center gap-1">
-                      <span>Slot {slotIdx + 1}</span>
-                      {isTarget && <span className="text-[#ff4d6d]">● Dipilih</span>}
-                    </div>
+                      assignPhotoToSlot(slotIdx, draggedPhotoUrl);
+                      setDraggedPhotoUrl(null);
+                    }
+                  }}
+                  style={{
+                    position: "absolute",
+                    left: `${leftPct}%`,
+                    top: `${topPct}%`,
+                    width: `${widthPct}%`,
+                    height: `${heightPct}%`,
+                  }}
+                  className={`rounded-xl transition-all cursor-pointer flex items-center justify-center pointer-events-auto ${
+                    isTarget
+                      ? "ring-4 ring-[#ff4d6d] ring-offset-2 bg-[#ff4d6d]/15"
+                      : "hover:ring-2 hover:ring-[#764ba2]/60"
+                  }`}
+                >
+                  {/* Slot badge indicator */}
+                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-black z-20 flex items-center gap-1">
+                    <span>Slot {slotIdx + 1}</span>
+                    {isTarget && <span className="text-[#ff4d6d]">● Dipilih</span>}
+                  </div>
 
-                    {/* Controls on hover / touch */}
-                    {photoUrl ? (
-                      <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                        {/* Swap with next slot */}
-                        {slotIdx < 3 && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playClick();
-                              swapSlots(slotIdx, slotIdx + 1);
-                            }}
-                            className="p-1.5 rounded-lg bg-white/90 text-[#2d1b4e] shadow hover:bg-white cursor-pointer"
-                            title="Tukar dengan Slot Bawah"
-                          >
-                            <ArrowUpDown className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        {/* Remove photo from slot */}
+                  {/* Slot Controls on hover / touch */}
+                  {photoUrl ? (
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      {slotIdx < geom.slots.length - 1 && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             playClick();
-                            removePhotoFromSlot(slotIdx);
+                            swapSlots(slotIdx, slotIdx + 1);
                           }}
-                          className="p-1.5 rounded-lg bg-red-500 text-white shadow hover:bg-red-600 cursor-pointer"
-                          title="Hapus Foto dari Slot Ini"
+                          className="p-1 rounded-md bg-white/90 text-[#2d1b4e] shadow hover:bg-white cursor-pointer"
+                          title="Tukar Posisi"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <ArrowUpDown className="w-3 h-3" />
                         </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playClick();
+                          removePhotoFromSlot(slotIdx);
+                        }}
+                        className="p-1 rounded-md bg-red-500 text-white shadow hover:bg-red-600 cursor-pointer"
+                        title="Hapus Foto dari Slot"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center p-1 z-10 pointer-events-none">
+                      <div className="w-7 h-7 rounded-full bg-white/80 border-2 border-dashed border-[#2d1b4e]/40 flex items-center justify-center mx-auto mb-1 text-[#2d1b4e]">
+                        <Plus className="w-3.5 h-3.5" />
                       </div>
-                    ) : (
-                      /* Empty slot prompt */
-                      <div className="text-center p-2 z-10 pointer-events-none">
-                        <div className="w-8 h-8 rounded-full bg-white/80 border-2 border-dashed border-[#2d1b4e]/40 flex items-center justify-center mx-auto mb-1 text-[#2d1b4e]">
-                          <Plus className="w-4 h-4" />
-                        </div>
-                        <span className="text-[11px] font-black text-[#2d1b4e]/70 bg-white/60 px-2 py-0.5 rounded-full">
-                          Klik untuk Isi Foto
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                      <span className="text-[10px] font-black text-[#2d1b4e]/70 bg-white/60 px-2 py-0.5 rounded-full">
+                        Pilih Foto
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             {/* Placed Stickers Interactive Layer */}
             {placedStickers.map((s) => {
@@ -419,11 +417,10 @@ export default function StudioScreen() {
                   <img
                     src={s.url}
                     alt="Sticker"
-                    className="w-14 h-14 object-contain drop-shadow-md pointer-events-none"
+                    className="w-12 h-12 sm:w-14 sm:h-14 object-contain drop-shadow-md pointer-events-none"
                     draggable={false}
                   />
 
-                  {/* Quick Delete button on sticker */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -444,13 +441,14 @@ export default function StudioScreen() {
         {/* Right / Bottom Sidebar: Customization Controls */}
         <div className="w-full lg:w-96 border-t-2 lg:border-t-0 lg:border-l-2 border-[#2d1b4e]/10 bg-white flex flex-col h-auto lg:h-full">
           {/* Studio Navigation Tabs */}
-          <div className="flex border-b-2 border-[#2d1b4e]/10 bg-[#faf5ff] p-1.5 gap-1 overflow-x-auto">
+          <div className="flex border-b-2 border-[#2d1b4e]/10 bg-[#faf5ff] p-1 gap-1 overflow-x-auto">
             {[
-              { id: "photos", label: "Baki Foto", icon: <Images className="w-4 h-4" /> },
-              { id: "frames", label: "Frame", icon: <Palette className="w-4 h-4" /> },
-              { id: "stickers", label: "Stiker & Emot", icon: <Smile className="w-4 h-4" /> },
-              { id: "filters", label: "Filter", icon: <SlidersHorizontal className="w-4 h-4" /> },
-              { id: "text", label: "Teks Label", icon: <Type className="w-4 h-4" /> },
+              { id: "layout", label: "Bentuk Frame", icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+              { id: "photos", label: "Baki Foto", icon: <Images className="w-3.5 h-3.5" /> },
+              { id: "frames", label: "Warna Tema", icon: <Palette className="w-3.5 h-3.5" /> },
+              { id: "stickers", label: "Stiker & Emot", icon: <Smile className="w-3.5 h-3.5" /> },
+              { id: "filters", label: "Filter", icon: <SlidersHorizontal className="w-3.5 h-3.5" /> },
+              { id: "text", label: "Teks Label", icon: <Type className="w-3.5 h-3.5" /> },
             ].map((tab) => {
               const active = activeTab === tab.id;
               return (
@@ -460,28 +458,79 @@ export default function StudioScreen() {
                     playClick();
                     setActiveTab(tab.id as StudioTab);
                   }}
-                  className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+                  className={`flex-1 py-2 px-2 rounded-xl text-[11px] sm:text-xs font-black flex items-center justify-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
                     active
-                      ? "bg-white text-[#764ba2] shadow-[0_2px_8px_rgba(118,75,162,0.2)] border border-[#2d1b4e]/10"
+                      ? "bg-white text-[#764ba2] shadow-sm border border-[#2d1b4e]/10"
                       : "text-[#5e4777] hover:bg-white/50"
                   }`}
                 >
                   {tab.icon}
-                  {tab.label}
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Tab Content Panels */}
-          <div className="flex-1 p-4 overflow-y-auto max-h-[350px] lg:max-h-none">
-            {/* TAB 1: CAPTURED PHOTOS TRAY (6 or 10 Photos) */}
+          <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto max-h-[320px] lg:max-h-none">
+            {/* TAB 0: LAYOUT / BENTUK FRAME KALI BERAPA */}
+            {activeTab === "layout" && (
+              <div className="flex flex-col gap-3">
+                <div className="bg-[#f0e6ff] p-3 rounded-2xl border-2 border-[#2d1b4e]/10">
+                  <span className="text-xs font-black text-[#2d1b4e] block mb-1">
+                    Pilih Bentuk Layout Frame
+                  </span>
+                  <p className="text-[11px] font-semibold text-[#5e4777]">
+                    Bebas pilih bentuk frame vertikal 4-cut, grid kotak 2x2, poster 6 foto, atau
+                    strip retro tanpa merusak proporsi foto!
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {LAYOUT_OPTIONS.map((opt) => {
+                    const isSelected = layoutType === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => {
+                          playClick();
+                          setLayoutType(opt.id);
+                        }}
+                        className={`p-3 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? "border-[#764ba2] bg-[#f5eeff] shadow-[0_4px_0_#764ba2] scale-[1.02]"
+                            : "border-[#2d1b4e]/10 bg-white hover:border-[#764ba2]/40"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-2xl">{opt.icon}</span>
+                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#ff4d6d] text-white">
+                              {opt.badge}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-black text-[#2d1b4e]">{opt.name}</h4>
+                          <p className="text-[10px] font-semibold text-[#8b6cb0] mt-0.5 leading-tight">
+                            {opt.description}
+                          </p>
+                        </div>
+                        <div className="mt-2 text-[10px] font-black text-[#764ba2]">
+                          {opt.slots} Slot Foto
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 1: CAPTURED PHOTOS TRAY */}
             {activeTab === "photos" && (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <div className="bg-[#f0e6ff] p-3 rounded-2xl border-2 border-[#2d1b4e]/10">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-black text-[#2d1b4e]">
-                      Koleksi Hasil Foto ({capturedPhotos.length} Shots)
+                      Koleksi Foto ({capturedPhotos.length} Shots)
                     </span>
                     <span className="text-[10px] font-bold text-[#764ba2] bg-white px-2 py-0.5 rounded-full">
                       Tarik atau Klik Foto
@@ -493,10 +542,8 @@ export default function StudioScreen() {
                   </p>
                 </div>
 
-                {/* Photo Grid of 6 or 10 Shots */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {capturedPhotos.map((photoUrl, idx) => {
-                    // Check if photo is already used in any of the 4 slots
                     const slotUsedIndex = frameSlots.findIndex((s) => s === photoUrl);
                     const isUsed = slotUsedIndex !== -1;
 
@@ -516,17 +563,13 @@ export default function StudioScreen() {
                         <img
                           src={photoUrl}
                           alt={`Shot ${idx + 1}`}
-                          className="w-full h-24 object-cover"
+                          className="w-full h-20 sm:h-24 object-cover"
                         />
-
-                        {/* Shot number badge */}
-                        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-black">
+                        <div className="absolute top-1 left-1 px-1.5 py-0.2 rounded-md bg-black/70 text-white text-[9px] font-black">
                           #{idx + 1}
                         </div>
-
-                        {/* Slot placement badge if used */}
                         {isUsed && (
-                          <div className="absolute bottom-1.5 left-1.5 right-1.5 text-center py-0.5 rounded bg-[#764ba2] text-white text-[10px] font-black">
+                          <div className="absolute bottom-1 left-1 right-1 text-center py-0.5 rounded bg-[#764ba2] text-white text-[9px] font-black">
                             Slot {slotUsedIndex + 1} ✓
                           </div>
                         )}
@@ -535,25 +578,24 @@ export default function StudioScreen() {
                   })}
                 </div>
 
-                {/* Quick Helper Actions */}
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => {
                       playClick();
-                      // Auto-fill slots with first 4 shots
-                      capturedPhotos.slice(0, 4).forEach((p, i) => assignPhotoToSlot(i, p));
+                      capturedPhotos
+                        .slice(0, geom.slots.length)
+                        .forEach((p, i) => assignPhotoToSlot(i, p));
                     }}
-                    className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost flex-1 text-xs"
+                    className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost flex-1 text-[11px] py-1.5"
                   >
-                    Reset Slot 1-4
+                    Auto-Isi Semua
                   </button>
                   <button
                     onClick={() => {
                       playClick();
-                      // Clear all slots
-                      [0, 1, 2, 3].forEach((i) => removePhotoFromSlot(i));
+                      geom.slots.forEach((_, i) => removePhotoFromSlot(i));
                     }}
-                    className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost text-xs text-red-500"
+                    className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost text-[11px] py-1.5 text-red-500"
                   >
                     Kosongkan Slot
                   </button>
@@ -561,10 +603,9 @@ export default function StudioScreen() {
               </div>
             )}
 
-            {/* TAB 2: FRAMES CATALOG */}
+            {/* TAB 2: FRAMES COLOR / THEMES */}
             {activeTab === "frames" && (
-              <div className="flex flex-col gap-4">
-                {/* Categories */}
+              <div className="flex flex-col gap-3">
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
                   {FRAME_CATEGORIES.map((cat) => (
                     <button
@@ -573,7 +614,7 @@ export default function StudioScreen() {
                         playClick();
                         setFrameCategory(cat.id);
                       }}
-                      className={`px-3 py-1 rounded-full text-xs font-black whitespace-nowrap transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-full text-[11px] sm:text-xs font-black whitespace-nowrap transition-all cursor-pointer ${
                         frameCategory === cat.id
                           ? "bg-[#764ba2] text-white"
                           : "bg-gray-100 text-[#5e4777] hover:bg-gray-200"
@@ -584,8 +625,7 @@ export default function StudioScreen() {
                   ))}
                 </div>
 
-                {/* Frame Grid */}
-                <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 gap-2.5 max-h-[360px] overflow-y-auto pr-1">
                   {filteredFrames.map((frame) => {
                     const isSelected = selectedFrame.id === frame.id;
                     const bg = frame.solidColor
@@ -599,22 +639,22 @@ export default function StudioScreen() {
                           playClick();
                           setSelectedFrame(frame);
                         }}
-                        className={`p-3 rounded-2xl border-2 transition-all flex flex-col items-center text-center cursor-pointer ${
+                        className={`p-2.5 rounded-2xl border-2 transition-all flex flex-col items-center text-center cursor-pointer ${
                           isSelected
-                            ? "border-[#764ba2] bg-[#f0e6ff] shadow-[0_4px_0_#764ba2] scale-[1.02]"
+                            ? "border-[#764ba2] bg-[#f0e6ff] shadow-[0_3px_0_#764ba2] scale-[1.02]"
                             : "border-[#2d1b4e]/10 bg-white hover:border-[#764ba2]/40"
                         }`}
                       >
                         <div
-                          className="w-full h-16 rounded-xl border border-[#2d1b4e]/30 flex items-center justify-center mb-2 shadow-sm"
+                          className="w-full h-14 rounded-xl border border-[#2d1b4e]/30 flex items-center justify-center mb-1.5 shadow-sm"
                           style={{ background: bg }}
                         >
-                          <span className="text-2xl">{frame.emoji}</span>
+                          <span className="text-xl">{frame.emoji}</span>
                         </div>
-                        <span className="text-xs font-black text-[#2d1b4e] leading-tight">
+                        <span className="text-[11px] font-black text-[#2d1b4e] leading-tight">
                           {frame.name}
                         </span>
-                        <span className="text-[10px] font-bold text-[#8b6cb0] mt-0.5">
+                        <span className="text-[9px] font-bold text-[#8b6cb0] mt-0.5">
                           {frame.tagline || "Life4Cuts"}
                         </span>
                       </button>
@@ -626,9 +666,8 @@ export default function StudioScreen() {
 
             {/* TAB 3: STICKERS & EMOJIS */}
             {activeTab === "stickers" && (
-              <div className="flex flex-col gap-4">
-                {/* Categories */}
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-1 overflow-x-auto pb-1">
                   {STICKER_CATEGORIES.map((cat) => (
                     <button
                       key={cat.id}
@@ -636,7 +675,7 @@ export default function StudioScreen() {
                         playClick();
                         setStickerCategory(cat.id);
                       }}
-                      className={`px-3 py-1 rounded-full text-xs font-black whitespace-nowrap transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black whitespace-nowrap transition-all cursor-pointer ${
                         stickerCategory === cat.id
                           ? "bg-[#ff4d6d] text-white"
                           : "bg-gray-100 text-[#5e4777] hover:bg-gray-200"
@@ -647,26 +686,24 @@ export default function StudioScreen() {
                   ))}
                 </div>
 
-                {/* Sticker Gallery Grid */}
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5 max-h-[220px] overflow-y-auto p-1">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[200px] overflow-y-auto p-1">
                   {filteredStickers.map((st) => (
                     <button
                       key={st.id}
                       onClick={() => handleAddSticker(st)}
-                      className="p-2 rounded-xl border-2 border-[#2d1b4e]/10 bg-white hover:border-[#ff4d6d] hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm"
+                      className="p-1.5 rounded-xl border-2 border-[#2d1b4e]/10 bg-white hover:border-[#ff4d6d] hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm"
                       title={st.name}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={st.url} alt={st.name} className="w-8 h-8 object-contain" />
+                      <img src={st.url} alt={st.name} className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
                     </button>
                   ))}
                 </div>
 
-                {/* Sticker Adjustment Controls (if one is selected) */}
                 {activeSticker && (
-                  <div className="p-3 bg-[#fff0f3] rounded-2xl border-2 border-[#ff4d6d]/30">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-black text-[#ff4d6d]">
+                  <div className="p-2.5 bg-[#fff0f3] rounded-2xl border-2 border-[#ff4d6d]/30">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-black text-[#ff4d6d]">
                         Atur Stiker Terpilih
                       </span>
                       <button
@@ -675,17 +712,16 @@ export default function StudioScreen() {
                           removeSticker(activeSticker.id);
                           setSelectedStickerId(null);
                         }}
-                        className="text-[10px] font-bold text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
+                        className="text-[10px] font-bold text-red-500 hover:underline flex items-center gap-0.5 cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" /> Hapus
                       </button>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      {/* Scale slider */}
-                      <div className="flex items-center justify-between gap-3 text-xs">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-2 text-[11px]">
                         <span className="font-bold text-[#2d1b4e] flex items-center gap-1">
-                          <ZoomIn className="w-3.5 h-3.5" /> Ukuran:
+                          <ZoomIn className="w-3 h-3" /> Ukuran:
                         </span>
                         <input
                           type="range"
@@ -700,15 +736,14 @@ export default function StudioScreen() {
                           }
                           className="flex-1"
                         />
-                        <span className="font-black text-[#ff4d6d] w-8 text-right">
+                        <span className="font-black text-[#ff4d6d] w-6 text-right">
                           {activeSticker.scale}x
                         </span>
                       </div>
 
-                      {/* Rotation slider */}
-                      <div className="flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center justify-between gap-2 text-[11px]">
                         <span className="font-bold text-[#2d1b4e] flex items-center gap-1">
-                          <RotateCw className="w-3.5 h-3.5" /> Putar:
+                          <RotateCw className="w-3 h-3" /> Putar:
                         </span>
                         <input
                           type="range"
@@ -723,7 +758,7 @@ export default function StudioScreen() {
                           }
                           className="flex-1"
                         />
-                        <span className="font-black text-[#ff4d6d] w-8 text-right">
+                        <span className="font-black text-[#ff4d6d] w-7 text-right">
                           {activeSticker.rotation}°
                         </span>
                       </div>
@@ -738,7 +773,7 @@ export default function StudioScreen() {
                       clearStickers();
                       setSelectedStickerId(null);
                     }}
-                    className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost text-xs text-red-500"
+                    className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost text-[11px] py-1 text-red-500"
                   >
                     Hapus Semua Stiker ({placedStickers.length})
                   </button>
@@ -748,9 +783,9 @@ export default function StudioScreen() {
 
             {/* TAB 4: FILTERS & TUNE */}
             {activeTab === "filters" && (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <div>
-                  <label className="text-xs font-black text-[#2d1b4e] mb-2 block">
+                  <label className="text-xs font-black text-[#2d1b4e] mb-1.5 block">
                     Preset Filter Foto
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -773,8 +808,7 @@ export default function StudioScreen() {
                   </div>
                 </div>
 
-                {/* Sliders */}
-                <div className="space-y-3 pt-2">
+                <div className="space-y-2.5 pt-1">
                   <div>
                     <div className="flex justify-between text-xs font-bold text-[#2d1b4e] mb-1">
                       <span>Kecerahan (Brightness)</span>
@@ -810,9 +844,9 @@ export default function StudioScreen() {
 
             {/* TAB 5: BRANDING TEXT & DATE STAMP */}
             {activeTab === "text" && (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <div>
-                  <label className="text-xs font-black text-[#2d1b4e] mb-1.5 block">
+                  <label className="text-xs font-black text-[#2d1b4e] mb-1 block">
                     Judul Frame Photobooth
                   </label>
                   <input
@@ -821,12 +855,12 @@ export default function StudioScreen() {
                     onChange={(e) => setCustomTitle(e.target.value)}
                     maxLength={30}
                     placeholder="Contoh: KikoBooth / Sweet 17th"
-                    className="w-full px-3 py-2 rounded-xl border-2 border-[#2d1b4e]/20 text-sm font-bold text-[#2d1b4e] outline-none focus:border-[#764ba2]"
+                    className="w-full px-3 py-1.5 rounded-xl border-2 border-[#2d1b4e]/20 text-xs sm:text-sm font-bold text-[#2d1b4e] outline-none focus:border-[#764ba2]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-black text-[#2d1b4e] mb-1.5 block">
+                  <label className="text-xs font-black text-[#2d1b4e] mb-1 block">
                     Sub-judul / Tagline
                   </label>
                   <input
@@ -835,11 +869,11 @@ export default function StudioScreen() {
                     onChange={(e) => setCustomSubtitle(e.target.value)}
                     maxLength={40}
                     placeholder="Contoh: Besties Forever / Seoul Studio"
-                    className="w-full px-3 py-2 rounded-xl border-2 border-[#2d1b4e]/20 text-sm font-bold text-[#2d1b4e] outline-none focus:border-[#764ba2]"
+                    className="w-full px-3 py-1.5 rounded-xl border-2 border-[#2d1b4e]/20 text-xs sm:text-sm font-bold text-[#2d1b4e] outline-none focus:border-[#764ba2]"
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-200">
                   <span className="text-xs font-bold text-[#2d1b4e]">
                     Tampilkan Tanggal Cetak
                   </span>

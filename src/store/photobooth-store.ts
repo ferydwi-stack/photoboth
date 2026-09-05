@@ -6,12 +6,92 @@ import { FrameDef, FRAMES } from "@/lib/frames";
 export type AppPage = "home" | "booth" | "gallery" | "frames" | "guide";
 export type BoothStep = "camera" | "studio" | "preview";
 export type ShotCountMode = 6 | 10;
+export type LayoutType = "strip-4" | "grid-4" | "strip-3" | "grid-6" | "duo-2" | "single-1";
+
+export interface LayoutOption {
+  id: LayoutType;
+  name: string;
+  slots: number;
+  icon: string;
+  description: string;
+  badge: string;
+}
+
+export const LAYOUT_OPTIONS: LayoutOption[] = [
+  {
+    id: "strip-4",
+    name: "1x4 Strip Klasik",
+    slots: 4,
+    icon: "🎞️",
+    description: "Format strip vertikal 4 foto khas Life4Cuts Korea",
+    badge: "Populer",
+  },
+  {
+    id: "grid-4",
+    name: "2x2 Grid Kotak",
+    slots: 4,
+    icon: "⏹️",
+    description: "Grid kotak 4 foto ala Photoism & Haru Film",
+    badge: "Trending",
+  },
+  {
+    id: "strip-3",
+    name: "1x3 Strip Retro",
+    slots: 3,
+    icon: "📸",
+    description: "Format strip 3 foto vintage bergaya 90-an",
+    badge: "Retro",
+  },
+  {
+    id: "grid-6",
+    name: "2x3 Grid Poster",
+    slots: 6,
+    icon: "🖼️",
+    description: "Poster 6 foto (muat semua 6 pose sekaligus!)",
+    badge: "Lengkap",
+  },
+  {
+    id: "duo-2",
+    name: "1x2 Duo Strip",
+    slots: 2,
+    icon: "👥",
+    description: "Dua foto landscape besar untuk couple/sahabat",
+    badge: "Couple",
+  },
+  {
+    id: "single-1",
+    name: "1x1 Polaroid Solo",
+    slots: 1,
+    icon: "🤍",
+    description: "Satu foto hero berbingkai Polaroid klasik",
+    badge: "Solo",
+  },
+];
+
+export function getSlotCount(layout: LayoutType): number {
+  switch (layout) {
+    case "single-1":
+      return 1;
+    case "duo-2":
+      return 2;
+    case "strip-3":
+      return 3;
+    case "strip-4":
+    case "grid-4":
+      return 4;
+    case "grid-6":
+      return 6;
+    default:
+      return 4;
+  }
+}
 
 export interface SavedPhotoStrip {
   id: string;
   url: string;
   date: string;
   frameName: string;
+  layoutName: string;
   shotCount: number;
 }
 
@@ -28,9 +108,13 @@ interface PhotoboothState {
   shotCountMode: ShotCountMode;
   setShotCountMode: (mode: ShotCountMode) => void;
 
+  // Layout Structure (Kali Berapa)
+  layoutType: LayoutType;
+  setLayoutType: (type: LayoutType) => void;
+
   // Photo Storage & Slot Placement
   capturedPhotos: string[]; // All 6 or 10 photos captured
-  frameSlots: (string | null)[]; // 4 slots for the fixed-size strip
+  frameSlots: (string | null)[]; // Slots for current layout
   selectedSlotIndex: number | null; // Currently targeted slot for replacement
 
   addCapturedPhoto: (p: string) => void;
@@ -42,6 +126,8 @@ interface PhotoboothState {
   initializeSlotsWithCaptured: () => void;
 
   // Camera Settings
+  selectedCameraDeviceId: string | null;
+  setSelectedCameraDeviceId: (id: string | null) => void;
   isFlashing: boolean;
   isMirrored: boolean;
   autoCaptureTimer: number; // 3, 5, or 10 seconds
@@ -112,7 +198,27 @@ export const usePhotoboothStore = create<PhotoboothState>()(
       shotCountMode: 6,
       setShotCountMode: (shotCountMode) => set({ shotCountMode }),
 
-      // Photos & 4 Fixed Slots
+      // Layout Format (Kali berapa)
+      layoutType: "strip-4",
+      setLayoutType: (layoutType) => {
+        const requiredSlots = getSlotCount(layoutType);
+        const currentSlots = get().frameSlots;
+        const captured = get().capturedPhotos;
+
+        // Build new slots array preserving existing or auto-filling from captured
+        const newSlots: (string | null)[] = [];
+        for (let i = 0; i < requiredSlots; i++) {
+          newSlots.push(currentSlots[i] ?? captured[i] ?? null);
+        }
+
+        set({
+          layoutType,
+          frameSlots: newSlots,
+          selectedSlotIndex: null,
+        });
+      },
+
+      // Photos & Dynamic Fixed Slots
       capturedPhotos: [],
       frameSlots: [null, null, null, null],
       selectedSlotIndex: null,
@@ -120,12 +226,15 @@ export const usePhotoboothStore = create<PhotoboothState>()(
       addCapturedPhoto: (p) => {
         set((s) => {
           const nextCaptured = [...s.capturedPhotos, p];
-          // Auto fill empty slots as photos are taken
+          const requiredSlots = getSlotCount(s.layoutType);
           const nextSlots = [...s.frameSlots];
+
+          // Auto-fill empty slot as photos are taken
           const firstEmpty = nextSlots.findIndex((slot) => slot === null);
-          if (firstEmpty !== -1 && firstEmpty < 4) {
+          if (firstEmpty !== -1 && firstEmpty < requiredSlots) {
             nextSlots[firstEmpty] = p;
           }
+
           return {
             capturedPhotos: nextCaptured,
             frameSlots: nextSlots,
@@ -133,16 +242,19 @@ export const usePhotoboothStore = create<PhotoboothState>()(
         });
       },
 
-      clearCapturedPhotos: () =>
+      clearCapturedPhotos: () => {
+        const slotsCount = getSlotCount(get().layoutType);
         set({
           capturedPhotos: [],
-          frameSlots: [null, null, null, null],
+          frameSlots: Array(slotsCount).fill(null),
           selectedSlotIndex: null,
-        }),
+        });
+      },
 
       assignPhotoToSlot: (slotIndex, photoUrl) => {
         set((s) => {
-          if (slotIndex < 0 || slotIndex >= 4) return s;
+          const count = getSlotCount(s.layoutType);
+          if (slotIndex < 0 || slotIndex >= count) return s;
           const next = [...s.frameSlots];
           next[slotIndex] = photoUrl;
           return { frameSlots: next };
@@ -151,7 +263,8 @@ export const usePhotoboothStore = create<PhotoboothState>()(
 
       removePhotoFromSlot: (slotIndex) => {
         set((s) => {
-          if (slotIndex < 0 || slotIndex >= 4) return s;
+          const count = getSlotCount(s.layoutType);
+          if (slotIndex < 0 || slotIndex >= count) return s;
           const next = [...s.frameSlots];
           next[slotIndex] = null;
           return { frameSlots: next };
@@ -160,7 +273,8 @@ export const usePhotoboothStore = create<PhotoboothState>()(
 
       swapSlots: (fromIndex, toIndex) => {
         set((s) => {
-          if (fromIndex < 0 || fromIndex >= 4 || toIndex < 0 || toIndex >= 4) return s;
+          const count = getSlotCount(s.layoutType);
+          if (fromIndex < 0 || fromIndex >= count || toIndex < 0 || toIndex >= count) return s;
           const next = [...s.frameSlots];
           const temp = next[fromIndex];
           next[fromIndex] = next[toIndex];
@@ -173,17 +287,17 @@ export const usePhotoboothStore = create<PhotoboothState>()(
 
       initializeSlotsWithCaptured: () => {
         const photos = get().capturedPhotos;
-        set({
-          frameSlots: [
-            photos[0] ?? null,
-            photos[1] ?? null,
-            photos[2] ?? null,
-            photos[3] ?? null,
-          ],
-        });
+        const count = getSlotCount(get().layoutType);
+        const slots: (string | null)[] = [];
+        for (let i = 0; i < count; i++) {
+          slots.push(photos[i] ?? null);
+        }
+        set({ frameSlots: slots });
       },
 
       // Camera Settings
+      selectedCameraDeviceId: null,
+      setSelectedCameraDeviceId: (id) => set({ selectedCameraDeviceId: id }),
       isFlashing: false,
       isMirrored: true,
       autoCaptureTimer: 3,
@@ -236,6 +350,8 @@ export const usePhotoboothStore = create<PhotoboothState>()(
       // Saved Gallery
       savedGalleries: [],
       saveToGallery: (url, frameName) => {
+        const layout = get().layoutType;
+        const layoutOpt = LAYOUT_OPTIONS.find((l) => l.id === layout);
         const item: SavedPhotoStrip = {
           id: `strip_${Date.now()}`,
           url,
@@ -247,6 +363,7 @@ export const usePhotoboothStore = create<PhotoboothState>()(
             minute: "2-digit",
           }),
           frameName,
+          layoutName: layoutOpt?.name || "1x4 Strip",
           shotCount: get().shotCountMode,
         };
         set((s) => ({
@@ -260,12 +377,13 @@ export const usePhotoboothStore = create<PhotoboothState>()(
 
       // Start Session helper
       startBoothSession: (shotCount = 6) => {
+        const slotsCount = getSlotCount(get().layoutType);
         set({
           activePage: "booth",
           boothStep: "camera",
           shotCountMode: shotCount,
           capturedPhotos: [],
-          frameSlots: [null, null, null, null],
+          frameSlots: Array(slotsCount).fill(null),
           selectedSlotIndex: null,
           placedStickers: [],
           finalPhoto: null,
@@ -273,10 +391,11 @@ export const usePhotoboothStore = create<PhotoboothState>()(
       },
 
       resetBooth: () => {
+        const slotsCount = getSlotCount(get().layoutType);
         set({
           boothStep: "camera",
           capturedPhotos: [],
-          frameSlots: [null, null, null, null],
+          frameSlots: Array(slotsCount).fill(null),
           selectedSlotIndex: null,
           placedStickers: [],
           finalPhoto: null,
@@ -291,6 +410,8 @@ export const usePhotoboothStore = create<PhotoboothState>()(
         isMirrored: state.isMirrored,
         autoCaptureTimer: state.autoCaptureTimer,
         autoSequenceEnabled: state.autoSequenceEnabled,
+        layoutType: state.layoutType,
+        selectedCameraDeviceId: state.selectedCameraDeviceId,
       }),
     }
   )
