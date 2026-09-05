@@ -1,156 +1,332 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePhotoboothStore } from "@/store/photobooth-store";
-import { renderSingle, renderStrip, renderGrid, loadImage, downloadCanvas, generateFilename, type RenderOpts } from "@/lib/render-engine";
+import {
+  renderFixed4CutStrip,
+  loadImage,
+  downloadCanvas,
+  generateFilename,
+  RenderStripOpts,
+} from "@/lib/render-engine";
 import { PHOTO_FILTERS } from "@/lib/filters";
 import { useToastStore } from "@/components/Toast";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
-import { playSuccess } from "@/lib/sounds";
-import { Download, Share2, Home, ArrowLeft, RotateCcw, Loader2, Heart, X } from "lucide-react";
+import { playClick } from "@/lib/sounds";
+import {
+  Download,
+  Share2,
+  Printer,
+  ChevronLeft,
+  RotateCcw,
+  Sparkles,
+  Heart,
+  Check,
+  X,
+  Images,
+} from "lucide-react";
 
 export default function PreviewScreen() {
   const {
-    capturedPhotos, selectedFrame,
-    layoutMode, selectedFilter, placedStickers, brightness, contrast,
-    customText, customTextColor, watermarkEnabled, watermarkText,
-    setStep, setFinalPhoto, reset, clearCapturedPhotos, clearStickers,
+    frameSlots,
+    selectedFrame,
+    customTitle,
+    customSubtitle,
+    showDateStamp,
+    selectedFilter,
+    brightness,
+    contrast,
+    placedStickers,
+    setBoothStep,
+    setActivePage,
+    resetBooth,
+    saveToGallery,
+    setFinalPhoto,
   } = usePhotoboothStore();
 
   const addToast = useToastStore((s) => s.addToast);
   const { confirm, dialog } = useConfirmDialog();
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rendering, setRendering] = useState(true);
-  const [showDonation, setShowDonation] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const hasSavedRef = useRef(false);
 
-  const renderPhoto = useCallback(async () => {
-    const canvas = canvasRef.current;
-    if (!canvas || capturedPhotos.length === 0) return;
-    setRendering(true);
-    try {
-      const images = await Promise.all(capturedPhotos.map(loadImage));
-      const filterCss = PHOTO_FILTERS.find((f) => f.id === selectedFilter)?.css;
+  // Render high-res final photobooth strip on mount
+  useEffect(() => {
+    let isCancelled = false;
 
-      const opts: RenderOpts = {
-        frame: selectedFrame, title: "KikoBooth", filterCss, brightness, contrast,
-        stickers: placedStickers, customText, customTextColor,
-        watermarkText: watermarkEnabled ? watermarkText : null,
-      };
+    async function executeRender() {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-      if (layoutMode === "single") renderSingle(canvas, images[0], opts);
-      else if (layoutMode.startsWith("strip")) renderStrip(canvas, images, opts);
-      else if (layoutMode === "grid-4") renderGrid(canvas, images, opts);
+      try {
+        const slotImages = await Promise.all(
+          frameSlots.map(async (url) => {
+            if (!url) return null;
+            try {
+              return await loadImage(url);
+            } catch {
+              return null;
+            }
+          })
+        );
 
-      setFinalPhoto(canvas.toDataURL("image/png"));
-      playSuccess();
-    } catch (err) { console.error("Render failed", err); }
-    finally { setRendering(false); }
-  }, [capturedPhotos, selectedFrame, layoutMode, selectedFilter, placedStickers, brightness, contrast, customText, customTextColor, watermarkEnabled, watermarkText, setFinalPhoto]);
+        if (isCancelled) return;
 
-  useEffect(() => { renderPhoto(); }, [renderPhoto]);
+        const filterCss = PHOTO_FILTERS.find((f) => f.id === selectedFilter)?.css;
 
+        const opts: RenderStripOpts = {
+          frame: selectedFrame,
+          title: customTitle,
+          subtitle: customSubtitle,
+          showDate: showDateStamp,
+          filterCss,
+          brightness,
+          contrast,
+          stickers: placedStickers,
+          scaleFactor: 2.2, // High resolution for crystal clear print & download
+        };
+
+        await renderFixed4CutStrip(canvas, slotImages, opts);
+
+        if (isCancelled) return;
+
+        const dataUrl = canvas.toDataURL("image/png", 1.0);
+        setFinalPhoto(dataUrl);
+
+        if (!hasSavedRef.current) {
+          hasSavedRef.current = true;
+          saveToGallery(dataUrl, selectedFrame.name);
+        }
+      } catch (err) {
+        console.error("High-res render error", err);
+      } finally {
+        if (!isCancelled) {
+          setRendering(false);
+        }
+      }
+    }
+
+    executeRender();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    frameSlots,
+    selectedFrame,
+    customTitle,
+    customSubtitle,
+    showDateStamp,
+    selectedFilter,
+    brightness,
+    contrast,
+    placedStickers,
+    saveToGallery,
+    setFinalPhoto,
+  ]);
+
+  // Download high-res PNG
   const handleDownload = () => {
+    playClick();
     if (canvasRef.current) {
       downloadCanvas(canvasRef.current, generateFilename("KikoBooth"));
-      addToast("Foto berhasil disimpan!", "success");
-      setShowDonation(true);
+      addToast("Foto berhasil diunduh dalam kualitas tinggi!", "success");
+      setShowSupportModal(true);
     }
   };
 
-  const closeDonation = () => setShowDonation(false);
-  const donationUrl = "/qris.jpeg";
-  const waUrl = "https://wa.me/?text=Saya%20baru%20download%20foto%20dari%20KikoBooth%20%F0%9F%92%96";
-
-  const handleShare = async () => {
-    const canvas = canvasRef.current; if (!canvas) return;
-    try {
-      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));
-      if (blob && navigator.share) {
-        await navigator.share({ files: [new File([blob], generateFilename("KikoBooth"), { type: "image/png" })], title: "KikoBooth" });
-        addToast("Berhasil dibagikan!", "success");
-      } else if (blob) {
-        try {
-          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-          addToast("Foto disalin ke clipboard!", "info");
-        } catch {
-          addToast("Share tidak didukung browser ini", "error");
-        }
-      }
-    } catch { /* cancelled */ }
+  // Direct Print
+  const handlePrint = () => {
+    playClick();
+    window.print();
   };
 
-  const handleNewPhoto = async () => {
-    const ok = await confirm("Foto lagi?", "Foto saat ini tidak akan hilang jika sudah di-download.");
+  // Copy or Share
+  const handleShare = async () => {
+    playClick();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    try {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (blob && navigator.share) {
+        await navigator.share({
+          files: [new File([blob], generateFilename("KikoBooth"), { type: "image/png" })],
+          title: "KikoBooth Photo Strip",
+          text: "Foto 4-cut aesthetic dari KikoBooth!",
+        });
+        addToast("Berhasil dibagikan!", "success");
+      } else if (blob && navigator.clipboard) {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        addToast("Gambar berhasil disalin ke clipboard!", "info");
+      } else {
+        addToast("Fitur share otomatis tidak didukung, silakan unduh foto", "info");
+      }
+    } catch {
+      // User cancelled
+    }
+  };
+
+  const handleShootAgain = async () => {
+    playClick();
+    const ok = await confirm(
+      "Mulai Sesi Foto Baru?",
+      "Foto strip saat ini sudah tersimpan di Galeri aplikasi Anda."
+    );
     if (!ok) return;
-    clearCapturedPhotos(); clearStickers(); reset();
+    resetBooth();
   };
 
   return (
-    <div className="flex flex-col h-screen" style={{ background: "var(--gradient-bg)" }}>
+    <div
+      className="flex flex-col min-h-screen select-none pb-12"
+      style={{ background: "linear-gradient(180deg, #fbf7ff 0%, #f0e6ff 100%)" }}
+    >
       {dialog}
-      <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={() => setStep("editor")} className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost"><ArrowLeft className="w-4 h-4" /> Edit</button>
-        <div className="card-cartoon-sm px-4 py-1.5 bg-white"><span className="text-sm font-black text-[#2d1b4e]">Hasil Foto!</span></div>
-        <button onClick={handleNewPhoto} className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost" title="Beranda"><Home className="w-4 h-4" /></button>
-      </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 overflow-hidden">
-        <div className="relative max-h-full">
-          <canvas ref={canvasRef} className="max-h-[65vh] max-w-full object-contain rounded-2xl shadow-[0_16px_48px_rgba(120,60,200,0.25)] border-[6px] border-white animate-bounce-in" />
-          {rendering && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 rounded-2xl backdrop-blur-sm gap-3">
-              <Loader2 className="w-10 h-10 text-[#764ba2] animate-spin" />
-              <p className="text-sm font-bold text-[#764ba2]">Memproses foto...</p>
-            </div>
-          )}
+      {/* Top Bar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b-2 border-[#2d1b4e]/10 bg-white/90 backdrop-blur-md sticky top-0 z-30 print:hidden">
+        <button
+          onClick={() => {
+            playClick();
+            setBoothStep("studio");
+          }}
+          className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost text-xs"
+        >
+          <ChevronLeft className="w-4 h-4" /> Edit Ulang
+        </button>
+
+        <div className="card-cartoon-sm px-4 py-1.5 bg-white text-center">
+          <span className="text-xs font-black uppercase tracking-wider text-[#ff4d6d]">
+            Hasil Akhir
+          </span>
+          <h2 className="text-sm sm:text-base font-black text-[#2d1b4e]">
+            Photobooth Strip 4-Cut
+          </h2>
         </div>
+
+        <button
+          onClick={() => {
+            playClick();
+            setActivePage("gallery");
+          }}
+          className="btn-cartoon btn-cartoon-sm btn-cartoon-ghost text-xs flex items-center gap-1.5"
+        >
+          <Images className="w-4 h-4 text-[#764ba2]" />
+          Buka Galeri
+        </button>
       </div>
 
-      <div className="card-cartoon rounded-t-3xl rounded-b-none p-5 mx-0 border-x-0 border-b-0" style={{ borderTopWidth: "3px" }}>
-        <div className="flex gap-3 max-w-md mx-auto">
-          <button onClick={handleDownload} disabled={rendering} className="flex-1 btn-cartoon btn-cartoon-primary flex flex-col items-center gap-1 py-4 disabled:opacity-50">
-            <Download className="w-6 h-6" /><span className="text-sm">Simpan</span>
-          </button>
-          <button onClick={handleShare} disabled={rendering} className="flex-1 btn-cartoon btn-cartoon-warm flex flex-col items-center gap-1 py-4 disabled:opacity-50">
-            <Share2 className="w-6 h-6" /><span className="text-sm">Share</span>
-          </button>
-          <button onClick={handleNewPhoto} className="flex-1 btn-cartoon btn-cartoon-ghost flex flex-col items-center gap-1 py-4">
-            <RotateCcw className="w-6 h-6" /><span className="text-sm">Lagi!</span>
-          </button>
-        </div>
-      </div>
+      {/* Main Preview Container */}
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center p-4 sm:p-8 gap-8 max-w-6xl mx-auto w-full">
+        {/* Strip Display Canvas */}
+        <div className="relative flex justify-center items-center">
+          <div className="relative rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(118,75,162,0.25)] border-6 border-white bg-white animate-bounce-in max-h-[75vh]">
+            <canvas
+              ref={canvasRef}
+              className="max-h-[72vh] max-w-[85vw] sm:max-w-md object-contain"
+            />
 
-      {showDonation && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/55 px-3 py-4" onClick={closeDonation}>
-          <div className="card-cartoon w-full max-w-sm overflow-hidden animate-bounce-in" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 bg-gradient-to-r from-[#ff9a9e] to-[#764ba2] text-white flex items-center justify-between">
-              <div className="flex items-center gap-2 font-black text-lg">
-                <Heart className="w-5 h-5" /> Dukung KikoBooth
+            {rendering && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
+                <Sparkles className="w-8 h-8 text-[#ff4d6d] animate-spin" />
+                <span className="text-xs font-black text-[#2d1b4e]">
+                  Merender Kualitas Cetak HD...
+                </span>
               </div>
-              <button onClick={closeDonation} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <X className="w-4 h-4" />
+            )}
+          </div>
+        </div>
+
+        {/* Action Panel */}
+        <div className="card-cartoon p-6 sm:p-8 bg-white max-w-md w-full flex flex-col gap-4 print:hidden">
+          <div className="text-center sm:text-left border-b-2 border-[#2d1b4e]/10 pb-4">
+            <span className="inline-flex items-center gap-1 text-xs font-black uppercase text-[#ff4d6d] bg-[#ffe5ec] px-3 py-1 rounded-full mb-2">
+              <Check className="w-3.5 h-3.5" /> Strip Siap Cetak
+            </span>
+            <h3 className="text-2xl font-black text-[#2d1b4e]">Foto Kamu Cantik Banget! ✨</h3>
+            <p className="text-xs sm:text-sm font-semibold text-[#5e4777] mt-1">
+              Foto strip ini sudah otomatis tersimpan ke Galeri KikoBooth Anda.
+            </p>
+          </div>
+
+          {/* Primary Action Buttons */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleDownload}
+              className="btn-cartoon btn-cartoon-primary text-base py-3.5 w-full shadow-[0_6px_0_#2d1b4e]"
+            >
+              <Download className="w-5 h-5" /> Unduh Strip Kualitas HD (PNG)
+            </button>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handlePrint}
+                className="btn-cartoon btn-cartoon-ghost text-xs sm:text-sm py-3"
+              >
+                <Printer className="w-4 h-4 text-[#764ba2]" /> Cetak 2x6
+              </button>
+
+              <button
+                onClick={handleShare}
+                className="btn-cartoon btn-cartoon-ghost text-xs sm:text-sm py-3"
+              >
+                <Share2 className="w-4 h-4 text-[#ff4d6d]" /> Bagikan / Salin
               </button>
             </div>
-            <div className="p-5 space-y-4">
-              <p className="text-sm text-[#2d1b4e] font-semibold leading-relaxed">
-                Kalau fotonya suka, boleh dukung developernya biar frame dan fitur-nya makin bagus.
-              </p>
-              <div className="rounded-2xl border-2 border-dashed border-[#c4b5d4] bg-[#faf5ff] p-3 flex items-center justify-center min-h-[220px]">
-                <div className="text-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={donationUrl} alt="QRIS donation" className="max-h-52 mx-auto rounded-xl shadow-md object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-                  <p className="text-xs text-[#8b6cb0] mt-2">Jika QR tidak tampil, gunakan link/transfer manual.</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <a href={waUrl} target="_blank" rel="noreferrer" className="flex-1 btn-cartoon btn-cartoon-primary text-sm py-3">
-                  Kirim Pesan
-                </a>
-                <button onClick={closeDonation} className="flex-1 btn-cartoon btn-cartoon-ghost text-sm py-3">
-                  Tutup
-                </button>
-              </div>
+          </div>
+
+          <div className="pt-2 border-t-2 border-[#2d1b4e]/10 flex flex-col gap-2">
+            <button
+              onClick={handleShootAgain}
+              className="btn-cartoon btn-cartoon-warm text-sm py-3 w-full"
+            >
+              <RotateCcw className="w-4 h-4" /> Foto Lagi (Sesi Baru)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Support / Share QRIS Modal */}
+      {showSupportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-bounce-in">
+          <div className="card-cartoon max-w-sm w-full p-6 bg-white relative text-center">
+            <button
+              onClick={() => setShowSupportModal(false)}
+              className="absolute top-3 right-3 p-1 text-gray-400 hover:text-gray-600 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#ff4d6d] to-[#ff9a9e] text-white flex items-center justify-center mx-auto mb-3 shadow-[0_4px_0_#2d1b4e]">
+              <Heart className="w-7 h-7" />
             </div>
+
+            <h4 className="text-xl font-black text-[#2d1b4e]">Terima Kasih!</h4>
+            <p className="text-xs font-semibold text-[#5e4777] mt-1 mb-4">
+              Suka dengan hasil foto KikoBooth? Bagikan ke temanmu atau traktir kopi pengembang! ☕
+            </p>
+
+            <div className="p-3 bg-gray-50 rounded-2xl border-2 border-gray-200 mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/qris.jpeg"
+                alt="QRIS Donasi"
+                className="w-44 h-44 object-contain mx-auto rounded-lg"
+              />
+              <span className="text-[10px] font-bold text-gray-400 block mt-2">
+                Scan QRIS KikoBooth
+              </span>
+            </div>
+
+            <button
+              onClick={() => setShowSupportModal(false)}
+              className="btn-cartoon btn-cartoon-ghost text-xs py-2 w-full"
+            >
+              Tutup
+            </button>
           </div>
         </div>
       )}
