@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePhotoboothStore } from "@/store/photobooth-store";
 import { PHOTO_FILTERS } from "@/lib/filters";
-import { STICKERS, STICKER_CATEGORIES, type PlacedSticker } from "@/lib/stickers";
+import { STICKERS, STICKER_CATEGORIES } from "@/lib/stickers";
 import { v4 as uuidv4 } from "uuid";
 import { ChevronLeft, ChevronRight, Trash2, RotateCcw, X, Palette, Star, SlidersHorizontal, Type } from "lucide-react";
 
@@ -19,9 +19,10 @@ export default function EditorScreen() {
   } = usePhotoboothStore();
 
   const [activeTab, setActiveTab] = useState<EditorTab>("filters");
-  const [stickerCategory, setStickerCategory] = useState("fun");
+  const [stickerCategory, setStickerCategory] = useState("y2k");
   const [previewIndex, setPreviewIndex] = useState(0);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  
   const photoRef = useRef<HTMLDivElement>(null);
 
   const photo = capturedPhotos[previewIndex] ?? capturedPhotos[0];
@@ -32,27 +33,44 @@ export default function EditorScreen() {
     contrast !== 100 ? `contrast(${contrast}%)` : "",
   ].filter(Boolean).join(" ") || undefined;
 
-  const onMouseMove = useCallback((e: MouseEvent) => {
+  const getPointerCoords = (e: MouseEvent | TouchEvent) => {
+    if ("touches" in e) {
+      return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+    }
+    return { clientX: e.clientX, clientY: e.clientY };
+  };
+
+  const onPointerMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!draggingId || !photoRef.current) return;
+    e.preventDefault(); // Prevent scrolling on mobile while dragging
     const r = photoRef.current.getBoundingClientRect();
+    const coords = getPointerCoords(e);
     updateSticker(draggingId, {
-      x: Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)),
-      y: Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100)),
+      x: Math.max(0, Math.min(100, ((coords.clientX - r.left) / r.width) * 100)),
+      y: Math.max(0, Math.min(100, ((coords.clientY - r.top) / r.height) * 100)),
     });
   }, [draggingId, updateSticker]);
 
-  const onMouseUp = useCallback(() => setDraggingId(null), []);
+  const onPointerUp = useCallback(() => setDraggingId(null), []);
 
   useEffect(() => {
     if (draggingId) {
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-      return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", onMouseUp); };
+      window.addEventListener("mousemove", onPointerMove as EventListener, { passive: false });
+      window.addEventListener("mouseup", onPointerUp as EventListener);
+      window.addEventListener("touchmove", onPointerMove as EventListener, { passive: false });
+      window.addEventListener("touchend", onPointerUp as EventListener);
+      
+      return () => { 
+        window.removeEventListener("mousemove", onPointerMove as EventListener); 
+        window.removeEventListener("mouseup", onPointerUp as EventListener); 
+        window.removeEventListener("touchmove", onPointerMove as EventListener); 
+        window.removeEventListener("touchend", onPointerUp as EventListener); 
+      };
     }
-  }, [draggingId, onMouseMove, onMouseUp]);
+  }, [draggingId, onPointerMove, onPointerUp]);
 
-  const addStickerFn = (emoji: string, sid: string) =>
-    addSticker({ id: uuidv4(), stickerId: sid, emoji, x: 50, y: 50, scale: 1, rotation: 0 });
+  const addStickerFn = (url: string, sid: string) =>
+    addSticker({ id: uuidv4(), stickerId: sid, url, x: 50, y: 50, scale: 1, rotation: 0 });
 
   const TABS: { id: EditorTab; label: string; icon: React.ReactNode }[] = [
     { id: "filters", label: "Filter", icon: <Palette className="w-5 h-5" /> },
@@ -78,22 +96,30 @@ export default function EditorScreen() {
       <div className="flex-1 flex items-center justify-center px-4 overflow-hidden min-h-0">
         <div ref={photoRef} className="relative rounded-3xl overflow-hidden border-4 border-[#2d1b4e] shadow-[0_12px_0_#2d1b4e] max-h-[42vh]" style={{ cursor: draggingId ? "grabbing" : "default" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo} alt="Preview" className="max-h-[42vh] max-w-full object-contain" style={{ filter: combinedFilter }} draggable={false} />
+          <img src={photo} alt="Preview" className="max-h-[42vh] max-w-full object-contain pointer-events-none" style={{ filter: combinedFilter }} draggable={false} />
 
           {placedStickers.map((s) => (
-            <div key={s.id} className="absolute select-none group"
-              style={{ left: `${s.x}%`, top: `${s.y}%`, transform: `translate(-50%,-50%) scale(${s.scale}) rotate(${s.rotation}deg)`, cursor: draggingId === s.id ? "grabbing" : "grab", zIndex: draggingId === s.id ? 50 : 10 }}
-              onMouseDown={(e) => { e.preventDefault(); setDraggingId(s.id); }}>
-              <span className="text-4xl drop-shadow">{s.emoji}</span>
+            <div key={s.id} className="absolute select-none group touch-none"
+              style={{ 
+                left: `${s.x}%`, top: `${s.y}%`, 
+                transform: `translate(-50%,-50%) scale(${s.scale}) rotate(${s.rotation}deg)`, 
+                cursor: draggingId === s.id ? "grabbing" : "grab", 
+                zIndex: draggingId === s.id ? 50 : 10 
+              }}
+              onMouseDown={(e) => { e.preventDefault(); setDraggingId(s.id); }}
+              onTouchStart={(e) => { e.preventDefault(); setDraggingId(s.id); }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.url} alt="Sticker" className="w-16 h-16 drop-shadow-md pointer-events-none" draggable={false} />
               <button onClick={(e) => { e.stopPropagation(); removeSticker(s.id); }}
-                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 border-2 border-white text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                onTouchEnd={(e) => { e.stopPropagation(); removeSticker(s.id); }}
+                className="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-500 border-2 border-white text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm">
                 <X className="w-3 h-3" />
               </button>
             </div>
           ))}
 
           {customText && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-2xl font-black drop-shadow-lg pointer-events-none px-3 py-1 rounded-xl" style={{ color: customTextColor, WebkitTextStroke: "0.5px rgba(0,0,0,0.3)" }}>
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-2xl font-black drop-shadow-lg pointer-events-none px-3 py-1 rounded-xl w-[90%] text-center" style={{ color: customTextColor, WebkitTextStroke: "0.5px rgba(0,0,0,0.3)" }}>
               {customText}
             </div>
           )}
@@ -131,7 +157,7 @@ export default function EditorScreen() {
                 <button key={filter.id} onClick={() => setSelectedFilter(filter.id)} className="flex-shrink-0 flex flex-col items-center gap-1.5 cursor-pointer">
                   <div className={`w-16 h-16 rounded-xl overflow-hidden border-[2.5px] border-[#2d1b4e] transition-all shadow-[0_3px_0_#2d1b4e] ${selectedFilter === filter.id ? "scale-105 ring-2 ring-[#764ba2] ring-offset-1" : "opacity-60 hover:opacity-100"}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photo} alt={filter.name} className="w-full h-full object-cover" style={{ filter: filter.css }} />
+                    <img src={photo} alt={filter.name} className="w-full h-full object-cover pointer-events-none" style={{ filter: filter.css }} />
                   </div>
                   <span className={`text-[9px] font-bold ${selectedFilter === filter.id ? "text-[#764ba2]" : "text-[#8b6cb0]"}`}>{filter.name}</span>
                 </button>
@@ -154,11 +180,14 @@ export default function EditorScreen() {
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-9 gap-1.5">
+              <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
                 {STICKERS.filter((s) => s.category === stickerCategory).map((sticker) => (
-                  <button key={sticker.id} onClick={() => addStickerFn(sticker.emoji, sticker.id)}
-                    className="w-10 h-10 rounded-xl bg-white border-[1.5px] border-[rgba(45,27,78,0.1)] hover:border-[#764ba2] hover:bg-[#f0e6ff] flex items-center justify-center text-2xl transition-all hover:scale-110 cursor-pointer shadow-[0_2px_0_rgba(45,27,78,0.1)]"
-                    title={sticker.name}>{sticker.emoji}</button>
+                  <button key={sticker.id} onClick={() => addStickerFn(sticker.url, sticker.id)}
+                    className="aspect-square rounded-xl bg-white border-[1.5px] border-[rgba(45,27,78,0.1)] hover:border-[#764ba2] hover:bg-[#f0e6ff] flex items-center justify-center transition-all hover:scale-110 cursor-pointer shadow-[0_2px_0_rgba(45,27,78,0.1)]"
+                    title={sticker.name}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={sticker.url} alt={sticker.name} className="w-8 h-8 pointer-events-none" />
+                  </button>
                 ))}
               </div>
             </div>

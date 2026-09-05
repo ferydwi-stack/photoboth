@@ -225,17 +225,20 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-function drawStickers(ctx: CanvasRenderingContext2D, stickers: PlacedSticker[], px: number, py: number, pw: number, ph: number) {
+function drawStickers(ctx: CanvasRenderingContext2D, stickers: PlacedSticker[], px: number, py: number, pw: number, ph: number, loadedImgs: Map<string, HTMLImageElement>) {
   stickers.forEach((s) => {
     const x = px + (s.x / 100) * pw;
     const y = py + (s.y / 100) * ph;
+    const size = 80 * s.scale;
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate((s.rotation * Math.PI) / 180);
-    ctx.font = `${48 * s.scale}px serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(s.emoji, 0, 0);
+    const img = loadedImgs.get(s.url);
+    if (img) {
+      ctx.shadowColor = "rgba(0,0,0,0.2)";
+      ctx.shadowBlur = 4;
+      ctx.drawImage(img, -size / 2, -size / 2, size, size);
+    }
     ctx.restore();
   });
 }
@@ -277,6 +280,22 @@ function drawEffects(ctx: CanvasRenderingContext2D, frame: FrameDef, w: number, 
 // Public API
 // ===========================
 
+async function loadStickerImages(stickers: PlacedSticker[]): Promise<Map<string, HTMLImageElement>> {
+  const unique = [...new Set(stickers.map((s) => s.url))];
+  const pairs = await Promise.all(
+    unique.map((url) =>
+      new Promise<[string, HTMLImageElement]>((res) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => res([url, img]);
+        img.onerror = () => res([url, img]); // skip broken
+        img.src = url;
+      })
+    )
+  );
+  return new Map(pairs);
+}
+
 export interface RenderOpts {
   frame: FrameDef;
   title?: string;
@@ -290,7 +309,7 @@ export interface RenderOpts {
   watermarkText?: string | null;
 }
 
-export function renderSingle(canvas: HTMLCanvasElement, photo: HTMLImageElement, o: RenderOpts) {
+export async function renderSingle(canvas: HTMLCanvasElement, photo: HTMLImageElement, o: RenderOpts) {
   const ctx = canvas.getContext("2d")!;
   const { frame } = o;
   const bw = frame.borderWidth;
@@ -303,7 +322,6 @@ export function renderSingle(canvas: HTMLCanvasElement, photo: HTMLImageElement,
   drawGradientBorder(ctx, frame, canvas.width, canvas.height);
   drawEffects(ctx, frame, canvas.width, canvas.height, bw);
 
-  // Photo
   const filter = buildFilter(o);
   ctx.save();
   roundRect(ctx, bw, bw, pw, ph, frame.innerRadius);
@@ -312,7 +330,11 @@ export function renderSingle(canvas: HTMLCanvasElement, photo: HTMLImageElement,
   ctx.restore();
 
   if (frame.hasInnerShadow) drawInnerShadow(ctx, bw, bw, pw, ph, frame.innerRadius);
-  if (o.stickers?.length) drawStickers(ctx, o.stickers, bw, bw, pw, ph);
+
+  if (o.stickers?.length) {
+    const imgs = await loadStickerImages(o.stickers);
+    drawStickers(ctx, o.stickers, bw, bw, pw, ph, imgs);
+  }
   if (o.customText) drawCustomText(ctx, o.customText, o.customTextColor || "#fff", canvas.width, bw + ph - 20);
 
   drawLabel(ctx, frame, canvas.width, ph + bw * 2, labelH, o.title || "KikoBooth", o.subtitle || "");
@@ -320,7 +342,7 @@ export function renderSingle(canvas: HTMLCanvasElement, photo: HTMLImageElement,
   if (o.watermarkText) drawWatermark(ctx, o.watermarkText, canvas.width, canvas.height);
 }
 
-export function renderStrip(canvas: HTMLCanvasElement, photos: HTMLImageElement[], o: RenderOpts) {
+export async function renderStrip(canvas: HTMLCanvasElement, photos: HTMLImageElement[], o: RenderOpts) {
   const ctx = canvas.getContext("2d")!;
   const { frame } = o;
   const bw = frame.borderWidth;
@@ -351,11 +373,15 @@ export function renderStrip(canvas: HTMLCanvasElement, photos: HTMLImageElement[
   const labelY = canvas.height - labelH;
   drawLabel(ctx, frame, canvas.width, labelY, labelH, o.title || "KikoBooth", o.subtitle || "");
 
+  if (o.stickers?.length) {
+    const imgs = await loadStickerImages(o.stickers);
+    drawStickers(ctx, o.stickers, bw, bw, spw, canvas.height - labelH - bw * 2, imgs);
+  }
   if (o.customText) drawCustomText(ctx, o.customText, o.customTextColor || "#fff", canvas.width, labelY - 10);
   if (o.watermarkText) drawWatermark(ctx, o.watermarkText, canvas.width, canvas.height);
 }
 
-export function renderGrid(canvas: HTMLCanvasElement, photos: HTMLImageElement[], o: RenderOpts) {
+export async function renderGrid(canvas: HTMLCanvasElement, photos: HTMLImageElement[], o: RenderOpts) {
   const ctx = canvas.getContext("2d")!;
   const { frame } = o;
   const bw = frame.borderWidth;
@@ -382,6 +408,10 @@ export function renderGrid(canvas: HTMLCanvasElement, photos: HTMLImageElement[]
   });
 
   drawLabel(ctx, frame, canvas.width, canvas.height - labelH, labelH, o.title || "KikoBooth", o.subtitle || "");
+  if (o.stickers?.length) {
+    const imgs = await loadStickerImages(o.stickers);
+    drawStickers(ctx, o.stickers, bw, bw, canvas.width - bw * 2, canvas.height - labelH - bw * 2, imgs);
+  }
   if (o.customText) drawCustomText(ctx, o.customText, o.customTextColor || "#fff", canvas.width, canvas.height - labelH - 10);
   if (o.watermarkText) drawWatermark(ctx, o.watermarkText, canvas.width, canvas.height);
 }
@@ -422,7 +452,7 @@ export function downloadCanvas(canvas: HTMLCanvasElement, filename: string) {
   a.click();
 }
 
-export function generateFilename(eventName: string): string {
+export function generateFilename(name: string): string {
   const ts = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
-  return `${eventName.replace(/\s+/g, "-").toLowerCase()}_${ts}.png`;
+  return `${name.replace(/\s+/g, "-").toLowerCase()}_${ts}.png`;
 }
