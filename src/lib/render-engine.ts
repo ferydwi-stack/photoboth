@@ -64,7 +64,6 @@ function drawGradientBorder(
       }
     }
 
-    // Draw to temp canvas then clip with rounded rect
     const tmp = document.createElement("canvas");
     tmp.width = w; tmp.height = h;
     const tmpCtx = tmp.getContext("2d")!;
@@ -79,12 +78,10 @@ function drawGradientBorder(
 }
 
 function drawGlitter(ctx: CanvasRenderingContext2D, w: number, h: number, bw: number) {
-  // Add subtle noise/glitter texture to the border area
   ctx.save();
   for (let i = 0; i < 800; i++) {
     const x = Math.random() * w;
     const y = Math.random() * h;
-    // Only in border area
     const inPhoto = x > bw && x < w - bw && y > bw && y < h - bw - 80;
     if (inPhoto) continue;
     const size = Math.random() * 2 + 0.5;
@@ -105,7 +102,6 @@ function drawSparkles(ctx: CanvasRenderingContext2D, w: number, h: number, bw: n
     if (inPhoto) continue;
     const size = Math.random() * 4 + 2;
     ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.8 + 0.2})`;
-    // Draw a 4-point star
     drawStar(ctx, x, y, size);
   }
   ctx.restore();
@@ -130,13 +126,11 @@ function drawSprocketHoles(ctx: CanvasRenderingContext2D, w: number, h: number, 
   const holeSize = 8;
   const spacing = 24;
   ctx.fillStyle = "#000000";
-  // Left column
   for (let y = bw; y < h - 80; y += spacing) {
     roundRect(ctx, 6, y, holeSize, holeSize, 2);
     ctx.fill();
     ctx.beginPath();
   }
-  // Right column
   for (let y = bw; y < h - 80; y += spacing) {
     roundRect(ctx, w - 6 - holeSize, y, holeSize, holeSize, 2);
     ctx.fill();
@@ -159,6 +153,46 @@ function drawPattern(ctx: CanvasRenderingContext2D, type: string, w: number, h: 
     }
   }
   ctx.restore();
+}
+
+// New: Checkered Pattern
+function drawCheckered(ctx: CanvasRenderingContext2D, w: number, h: number, bw: number, color1: string, color2: string) {
+  ctx.save();
+  const size = 30;
+  for (let y = 0; y < h; y += size) {
+    for (let x = 0; x < w; x += size) {
+      const inPhoto = x > bw - size && x < w - bw && y > bw - size && y < h - bw - 80 + size;
+      if (inPhoto) continue; // rough exclusion
+      ctx.fillStyle = ((x / size) + (y / size)) % 2 === 0 ? color1 : color2;
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+  ctx.restore();
+}
+
+// New: Frame Overlays (Y2K, Scrapbook, etc)
+function drawDecorations(ctx: CanvasRenderingContext2D, frame: FrameDef, w: number, h: number, bw: number) {
+  if (frame.id === "y2k-cyber") {
+    ctx.save();
+    ctx.strokeStyle = "#ff00ff";
+    ctx.lineWidth = 4;
+    // draw some neon lines
+    ctx.beginPath(); ctx.moveTo(0, 50); ctx.lineTo(w, 50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, h-100); ctx.lineTo(w, h-100); ctx.stroke();
+    // draw some stars
+    ctx.fillStyle = "#00ffff";
+    drawStar(ctx, 40, 40, 15);
+    drawStar(ctx, w - 40, h - 120, 20);
+    ctx.restore();
+  } else if (frame.id === "scrapbook-cute") {
+    ctx.save();
+    // tape on corners
+    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+    ctx.translate(30, 30); ctx.rotate(-Math.PI / 8); ctx.fillRect(-20, -10, 60, 20);
+    ctx.resetTransform();
+    ctx.translate(w - 30, h - 100); ctx.rotate(-Math.PI / 8); ctx.fillRect(-20, -10, 60, 20);
+    ctx.restore();
+  }
 }
 
 function drawInnerShadow(ctx: CanvasRenderingContext2D, x: number, y: number, pw: number, ph: number, r: number) {
@@ -270,10 +304,12 @@ function applyFilter(ctx: CanvasRenderingContext2D, filter: string, img: HTMLIma
 }
 
 function drawEffects(ctx: CanvasRenderingContext2D, frame: FrameDef, w: number, h: number, bw: number) {
+  if (frame.patternType === "checkered") drawCheckered(ctx, w, h, bw, frame.cornerColors.tl, frame.cornerColors.tr);
   if (frame.hasGlitter) drawGlitter(ctx, w, h, bw);
   if (frame.hasSparkles) drawSparkles(ctx, w, h, bw);
   if (frame.hasSprockets) drawSprocketHoles(ctx, w, h, bw);
-  if (frame.patternType && frame.patternType !== "none") drawPattern(ctx, frame.patternType, w, h, bw);
+  if (frame.patternType && frame.patternType !== "none" && frame.patternType !== "checkered") drawPattern(ctx, frame.patternType, w, h, bw);
+  drawDecorations(ctx, frame, w, h, bw);
 }
 
 // ===========================

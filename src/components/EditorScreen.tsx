@@ -93,10 +93,10 @@ export default function EditorScreen() {
         </button>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 overflow-hidden min-h-0">
-        <div ref={photoRef} className="relative rounded-3xl overflow-hidden border-4 border-[#2d1b4e] shadow-[0_12px_0_#2d1b4e] max-h-[42vh]" style={{ cursor: draggingId ? "grabbing" : "default" }}>
+      <div className="flex-1 flex items-center justify-center px-2 sm:px-4 overflow-hidden min-h-0 pt-4">
+        <div ref={photoRef} className="relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 sm:border-4 border-[#2d1b4e] shadow-[0_8px_0_#2d1b4e] sm:shadow-[0_12px_0_#2d1b4e] max-h-[45vh] sm:max-h-[42vh]" style={{ cursor: draggingId ? "grabbing" : "default" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo} alt="Preview" className="max-h-[42vh] max-w-full object-contain pointer-events-none" style={{ filter: combinedFilter }} draggable={false} />
+          <img src={photo} alt="Preview" className="max-h-[45vh] sm:max-h-[42vh] max-w-full object-contain pointer-events-none" style={{ filter: combinedFilter }} draggable={false} />
 
           {placedStickers.map((s) => (
             <div key={s.id} className="absolute select-none group touch-none"

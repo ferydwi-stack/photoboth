@@ -138,7 +138,8 @@ export default function CameraScreen() {
             autoPlay
             playsInline
             muted
-            webkit-playsinline=""
+            webkit-playsinline="true"
+            x-webkit-airplay="allow"
             className="max-h-[55vh] sm:max-h-[60vh] max-w-[90vw] sm:max-w-[85vw] object-contain"
             style={{ transform: isMirrored ? "scaleX(-1)" : "none", filter: currentFilter?.css !== "none" ? currentFilter?.css : undefined }}
           />
