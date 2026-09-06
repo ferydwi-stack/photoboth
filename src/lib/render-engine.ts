@@ -444,7 +444,7 @@ async function drawPlacedStickers(
   stickers.forEach((s) => {
     const x = (s.x / 100) * stripW;
     const y = (s.y / 100) * stripH;
-    const size = 68 * (s.scale || 1);
+    const baseSize = 68 * (s.scale || 1);
 
     ctx.save();
     ctx.translate(x, y);
@@ -452,9 +452,16 @@ async function drawPlacedStickers(
 
     const img = loadedImgs.get(s.url);
     if (img) {
+      const aspect =
+        img.naturalWidth && img.naturalHeight
+          ? img.naturalWidth / img.naturalHeight
+          : 1;
+      const drawW = aspect >= 1 ? baseSize * aspect : baseSize;
+      const drawH = aspect >= 1 ? baseSize : baseSize / aspect;
+
       ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
       ctx.shadowBlur = 6;
-      ctx.drawImage(img, -size / 2, -size / 2, size, size);
+      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
     }
     ctx.restore();
   });
@@ -509,6 +516,86 @@ export function computeLayoutGeometry(
         w: sw,
         h: sh,
       }));
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "mosaic-4": {
+      // 1 Hero Besar di atas (520x330) + 3 foto mini asimetris di bawah
+      const sw = 520, heroH = 330;
+      const miniH = 175;
+      const miniW = Math.floor((sw - gap * 2) / 3);
+      const lastMiniW = sw - (miniW + gap) * 2;
+      const baseW = sw + bw * 2;
+      const baseH = bw * 2 + heroH + gap + miniH + labelH;
+      const slots = [
+        { x: bw, y: bw, w: sw, h: heroH },
+        { x: bw, y: bw + heroH + gap, w: miniW, h: miniH },
+        { x: bw + miniW + gap, y: bw + heroH + gap, w: miniW, h: miniH },
+        { x: bw + (miniW + gap) * 2, y: bw + heroH + gap, w: lastMiniW, h: miniH },
+      ];
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "asym-split-3": {
+      // 1 Portrait tinggi di kiri (Lookbook) + 2 Landscape bertumpuk di kanan
+      const leftW = 270, totalH = 520;
+      const rightW = 270;
+      const rightH = Math.floor((totalH - gap) / 2);
+      const rightH2 = totalH - gap - rightH;
+      const baseW = bw * 2 + leftW + gap + rightW;
+      const baseH = bw * 2 + totalH + labelH;
+      const slots = [
+        { x: bw, y: bw, w: leftW, h: totalH },
+        { x: bw + leftW + gap, y: bw, w: rightW, h: rightH },
+        { x: bw + leftW + gap, y: bw + rightH + gap, w: rightW, h: rightH2 },
+      ];
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "zigzag-4": {
+      // 4 Foto staggered zig-zag / nyeleneh dengan lebar & offset dinamis
+      const baseInnerW = 500;
+      const sh = 235;
+      const baseW = baseInnerW + bw * 2;
+      const baseH = bw * 2 + sh * 4 + gap * 3 + labelH;
+      const slots = [
+        { x: bw, y: bw, w: 430, h: sh },
+        { x: bw + 70, y: bw + sh + gap, w: 430, h: sh },
+        { x: bw + 20, y: bw + (sh + gap) * 2, w: 440, h: sh },
+        { x: bw + 40, y: bw + (sh + gap) * 3, w: 460, h: sh },
+      ];
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
+    }
+
+    case "cinema-receipt-3": {
+      // Format Struk Belanja / Barcode Cafe Korea (3 Foto: 1 Hero + 2 Mini)
+      const contentW = 460;
+      const heroH = 290;
+      const miniH = 220;
+      const miniW = Math.floor((contentW - gap) / 2);
+      const topReceiptMargin = 20;
+      const baseW = contentW + bw * 2;
+      const baseH = bw * 2 + topReceiptMargin + heroH + gap + miniH + labelH + 30;
+      const slots = [
+        { x: bw, y: bw + topReceiptMargin, w: contentW, h: heroH },
+        { x: bw, y: bw + topReceiptMargin + heroH + gap, w: miniW, h: miniH },
+        { x: bw + miniW + gap, y: bw + topReceiptMargin + heroH + gap, w: contentW - miniW - gap, h: miniH },
+      ];
+      return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH - 10, labelH };
+    }
+
+    case "polaroid-pile-3": {
+      // Tumpukan Polaroid bersusun estetik (Scrapbook) dengan ukuran bervariasi
+      const baseInnerW = 480;
+      const baseW = baseInnerW + bw * 2;
+      const h0 = 280, h1 = 290, h2 = 280;
+      const overlap = 25;
+      const baseH = bw * 2 + h0 + h1 + h2 - (overlap * 2) + labelH + 20;
+      const slots = [
+        { x: bw + 20, y: bw + 15, w: 390, h: h0 },
+        { x: bw + 70, y: bw + 15 + h0 - overlap, w: 390, h: h1 },
+        { x: bw + 30, y: bw + 15 + h0 - overlap + h1 - overlap, w: 390, h: h2 },
+      ];
       return { baseWidth: baseW, baseHeight: baseH, slots, labelY: baseH - bw - labelH, labelH };
     }
 
@@ -666,8 +753,13 @@ export async function renderFixed4CutStrip(
 
   geom.slots.forEach((slot, i) => {
     const photoImg = slotImages[i];
-    const isTilted = shapeStyle === "collage-tilt";
-    const tiltDeg = isTilted ? TILT_ANGLES[i % TILT_ANGLES.length] : 0;
+    const isTilted = shapeStyle === "collage-tilt" || layout === "polaroid-pile-3";
+    const pileAngles = [-3.2, 2.5, -2.0];
+    const tiltDeg = isTilted
+      ? layout === "polaroid-pile-3"
+        ? pileAngles[i % pileAngles.length]
+        : TILT_ANGLES[i % TILT_ANGLES.length]
+      : 0;
     const cx = slot.x + slot.w / 2;
     const cy = slot.y + slot.h / 2;
 

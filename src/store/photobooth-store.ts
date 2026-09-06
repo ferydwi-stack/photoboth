@@ -7,7 +7,18 @@ import { flipImageDataUrl } from "@/lib/render-engine";
 export type AppPage = "home" | "booth" | "gallery" | "frames" | "guide";
 export type BoothStep = "camera" | "studio" | "preview";
 export type ShotCountMode = 6 | 10;
-export type LayoutType = "strip-4" | "grid-4" | "strip-3" | "grid-6" | "duo-2" | "single-1";
+export type LayoutType =
+  | "strip-4"
+  | "grid-4"
+  | "strip-3"
+  | "grid-6"
+  | "duo-2"
+  | "single-1"
+  | "mosaic-4"
+  | "asym-split-3"
+  | "zigzag-4"
+  | "cinema-receipt-3"
+  | "polaroid-pile-3";
 
 export interface LayoutOption {
   id: LayoutType;
@@ -26,6 +37,46 @@ export const LAYOUT_OPTIONS: LayoutOption[] = [
     icon: "🎞️",
     description: "Format strip vertikal 4 foto khas Life4Cuts Korea",
     badge: "Populer",
+  },
+  {
+    id: "mosaic-4",
+    name: "1 Hero + 3 Mini",
+    slots: 4,
+    icon: "💎",
+    description: "1 Foto Hero besar di atas + 3 foto mini asimetris di bawah",
+    badge: "Asimetris",
+  },
+  {
+    id: "asym-split-3",
+    name: "Editorial Split 3",
+    slots: 3,
+    icon: "📐",
+    description: "1 Portrait tinggi di kiri + 2 Landscape bertumpuk di kanan",
+    badge: "Lookbook",
+  },
+  {
+    id: "zigzag-4",
+    name: "Zigzag Staggered",
+    slots: 4,
+    icon: "⚡",
+    description: "4 Foto dengan lebar & posisi selang-seling dinamis",
+    badge: "Nyeleneh",
+  },
+  {
+    id: "cinema-receipt-3",
+    name: "Receipt & Barcode",
+    slots: 3,
+    icon: "🧾",
+    description: "Struk belanja estetik Korea dengan playlist lagu & barcode",
+    badge: "Korean Hits",
+  },
+  {
+    id: "polaroid-pile-3",
+    name: "Tumpukan Polaroid",
+    slots: 3,
+    icon: "📎",
+    description: "3 Foto Polaroid miring artistik bersusun bebas",
+    badge: "Scrapbook",
   },
   {
     id: "grid-4",
@@ -76,9 +127,14 @@ export function getSlotCount(layout: LayoutType): number {
     case "duo-2":
       return 2;
     case "strip-3":
+    case "asym-split-3":
+    case "cinema-receipt-3":
+    case "polaroid-pile-3":
       return 3;
     case "strip-4":
     case "grid-4":
+    case "mosaic-4":
+    case "zigzag-4":
       return 4;
     case "grid-6":
       return 6;

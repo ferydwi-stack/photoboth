@@ -30,9 +30,21 @@ import {
   ZoomIn,
   Plus,
   LayoutGrid,
+  Music,
 } from "lucide-react";
 
 type StudioTab = "layout" | "photos" | "frames" | "stickers" | "filters" | "text";
+
+const SONG_PRESETS = [
+  { title: "THE 1975", subtitle: "About You // 'Do you think I have forgotten?'", icon: "🖤" },
+  { title: "MULTO", subtitle: "Cup of Joe // 'Kahit sa panaginip lang...'", icon: "🥀" },
+  { title: "WAVE TO EARTH", subtitle: "seasons // 'I'll be your seasons'", icon: "🌊" },
+  { title: "NEWJEANS", subtitle: "Ditto // 'Stay in the middle'", icon: "🐰" },
+  { title: "ARCTIC MONKEYS", subtitle: "505 // 'I'm going back to 505'", icon: "🎸" },
+  { title: "TAYLOR SWIFT", subtitle: "Lover // 'Can I go where you go?'", icon: "💖" },
+  { title: "SZA", subtitle: "Snooze // 'I can't lose with you'", icon: "🌙" },
+  { title: "FRANK OCEAN", subtitle: "Pink + White // 'Everyday goes'", icon: "🍊" },
+];
 
 export default function StudioScreen() {
   const {
@@ -335,7 +347,9 @@ export default function StudioScreen() {
                         ? "42% 42% 14px 14px / 28% 28% 14px 14px"
                         : "12px",
                     transform:
-                      selectedFrame.shapeStyle === "collage-tilt"
+                      layoutType === "polaroid-pile-3"
+                        ? `rotate(${[-3.2, 2.5, -2.0][slotIdx % 3]}deg)`
+                        : selectedFrame.shapeStyle === "collage-tilt"
                         ? `rotate(${[-2, 1.8, -1.4, 2, -1.8, 1.5][slotIdx % 6]}deg)`
                         : "none",
                   }}
@@ -446,7 +460,7 @@ export default function StudioScreen() {
                   <img
                     src={s.url}
                     alt="Sticker"
-                    className="w-12 h-12 sm:w-14 sm:h-14 object-contain drop-shadow-md pointer-events-none"
+                    className="max-w-[130px] max-h-16 w-auto h-auto object-contain drop-shadow-md pointer-events-none"
                     draggable={false}
                   />
 
@@ -741,16 +755,39 @@ export default function StudioScreen() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[200px] overflow-y-auto p-1">
+                <div
+                  className={
+                    stickerCategory === "music"
+                      ? "grid grid-cols-2 gap-2 max-h-[260px] overflow-y-auto p-1"
+                      : "grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[200px] overflow-y-auto p-1"
+                  }
+                >
                   {filteredStickers.map((st) => (
                     <button
                       key={st.id}
                       onClick={() => handleAddSticker(st)}
-                      className="p-1.5 rounded-xl border-2 border-[#2d1b4e]/10 bg-white hover:border-[#ff4d6d] hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm"
+                      className={
+                        stickerCategory === "music"
+                          ? "p-2 rounded-xl border-2 border-[#2d1b4e]/10 bg-white hover:border-[#ff4d6d] hover:scale-[1.02] active:scale-95 transition-all flex flex-col items-center justify-center cursor-pointer shadow-sm text-center"
+                          : "p-1.5 rounded-xl border-2 border-[#2d1b4e]/10 bg-white hover:border-[#ff4d6d] hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm"
+                      }
                       title={st.name}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={st.url} alt={st.name} className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
+                      <img
+                        src={st.url}
+                        alt={st.name}
+                        className={
+                          stickerCategory === "music"
+                            ? "w-full max-h-12 object-contain"
+                            : "w-7 h-7 sm:w-8 sm:h-8 object-contain"
+                        }
+                      />
+                      {stickerCategory === "music" && (
+                        <span className="text-[9px] font-black text-[#2d1b4e] mt-1 line-clamp-1">
+                          {st.name}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -900,6 +937,42 @@ export default function StudioScreen() {
             {/* TAB 5: BRANDING TEXT & DATE STAMP */}
             {activeTab === "text" && (
               <div className="flex flex-col gap-3">
+                {/* 1-Click Hit Song Presets */}
+                <div className="bg-[#f0e6ff] p-3 rounded-2xl border-2 border-[#764ba2]/20">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Music className="w-3.5 h-3.5 text-[#764ba2]" />
+                    <span className="text-[11px] font-black text-[#2d1b4e]">
+                      Preset Judul Lagu Hits (1-Klik)
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-semibold text-[#5e4777] mb-2 leading-tight">
+                    Pilih lagu hits favoritmu untuk langsung menghiasi judul & lirik di bagian bawah frame:
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                    {SONG_PRESETS.map((p, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          playClick();
+                          setCustomTitle(p.title);
+                          setCustomSubtitle(p.subtitle);
+                        }}
+                        className="p-1.5 rounded-xl border border-[#764ba2]/30 bg-white hover:bg-[#764ba2] hover:text-white transition-all text-left flex items-start gap-1.5 cursor-pointer shadow-xs group"
+                      >
+                        <span className="text-xs">{p.icon}</span>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-black text-[#2d1b4e] group-hover:text-white truncate">
+                            {p.title}
+                          </p>
+                          <p className="text-[8.5px] font-semibold text-[#8b6cb0] group-hover:text-white/80 truncate">
+                            {p.subtitle}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-xs font-black text-[#2d1b4e] mb-1 block">
                     Judul Frame Photobooth
