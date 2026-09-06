@@ -302,6 +302,241 @@ function drawSparkleGlitter(ctx: CanvasRenderingContext2D, w: number, h: number)
   ctx.restore();
 }
 
+// Draw Album Art, Band Logos, and Signature Music Graphics
+function drawMusicBandThemeGraphics(
+  ctx: CanvasRenderingContext2D,
+  frame: FrameDef,
+  w: number,
+  h: number,
+  labelY: number
+) {
+  const theme = frame.musicTheme;
+  if (!theme) return;
+
+  ctx.save();
+
+  switch (theme) {
+    case "the1975": {
+      // The 1975 Signature Neon Rectangle Box Outline
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+      ctx.lineWidth = 2.5;
+      roundRect(ctx, w / 2 - 32, 6, 64, 18, 4);
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 10px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("THE 1975", w / 2, 16);
+
+      // Left Margin: Tape Time Code & Track
+      ctx.save();
+      ctx.translate(12, h / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.font = "bold 8.5px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("BFIAFL // ABOUT YOU // NO. 1975-A1", 0, 0);
+      ctx.restore();
+
+      // Right Margin: Stereo Balance Indicator
+      ctx.save();
+      ctx.translate(w - 12, h / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.font = "bold 8.5px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("[L] ━━━━●━━━━━ [R] STEREO", 0, 0);
+      ctx.restore();
+      break;
+    }
+
+    case "multo": {
+      // Multo - Cup of Joe: Dark Romantic Crimson & Gothic Floral Rose Motif
+      ctx.fillStyle = "#fed7aa";
+      ctx.font = "italic bold 11px 'Georgia', serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🥀 MULTO • CUP OF JOE 🥀", w / 2, 16);
+
+      ctx.strokeStyle = "rgba(254, 215, 170, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w / 2 - 90, 22);
+      ctx.lineTo(w / 2 + 90, 22);
+      ctx.stroke();
+
+      // Left & Right Margins: Filipino Indie Ballad Stamp
+      ctx.save();
+      ctx.translate(12, h / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = "rgba(254, 215, 170, 0.35)";
+      ctx.font = "italic 8.5px 'Georgia', serif";
+      ctx.textAlign = "center";
+      ctx.fillText("OPM HITS // KAHIT SA PANAGINIP LANG", 0, 0);
+      ctx.restore();
+
+      // Delicate Rose Petals in Corners
+      ctx.strokeStyle = "rgba(254, 215, 170, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(20, 20, 8, 0, Math.PI);
+      ctx.arc(w - 20, 20, 8, 0, Math.PI);
+      ctx.stroke();
+      break;
+    }
+
+    case "wavetoearth": {
+      // wave to earth: Ocean Wave Ripples & Lo-fi Vinyl Grooves
+      ctx.fillStyle = "#7dd3fc";
+      ctx.font = "900 11px 'Nunito', sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("wave to earth 🌊 seasons", w / 2, 16);
+
+      // Smooth sinusoidal wave curves along side borders
+      ctx.strokeStyle = "rgba(125, 211, 252, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let y = 30; y < h - 40; y += 40) {
+        ctx.moveTo(10, y);
+        ctx.bezierCurveTo(16, y + 10, 6, y + 20, 10, y + 30);
+        ctx.moveTo(w - 10, y);
+        ctx.bezierCurveTo(w - 6, y + 10, w - 16, y + 20, w - 10, y + 30);
+      }
+      ctx.stroke();
+
+      // Vinyl record groove arc in top right corner
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+      ctx.lineWidth = 1;
+      for (let r = 20; r <= 45; r += 7) {
+        ctx.beginPath();
+        ctx.arc(w, 0, r, Math.PI / 2, Math.PI);
+        ctx.stroke();
+      }
+      break;
+    }
+
+    case "newjeans": {
+      // NewJeans: Y2K Camcorder REC HUD & Bunny Ears Sparkles
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath();
+      ctx.arc(20, 16, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9px monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("● REC  00:03:06 [SP]", 28, 16);
+
+      ctx.textAlign = "right";
+      ctx.fillText("1080p HD ✦ NewJeans 🐰", w - 16, 16);
+
+      // Y2K Sparkle Stars along borders
+      ctx.fillStyle = "rgba(233, 213, 255, 0.85)";
+      ctx.font = "12px sans-serif";
+      ctx.fillText("✦", 10, h / 3);
+      ctx.fillText("✧", w - 16, h / 2.5);
+      ctx.fillText("✦", 10, (h / 3) * 2);
+      break;
+    }
+
+    case "arcticmonkeys": {
+      // Arctic Monkeys: Iconic AM Oscillating Soundwave Frequency Pulse
+      const centerY = 16;
+      const waveCount = 21;
+      const step = 4;
+      const startX = w / 2 - (waveCount * step) / 2;
+
+      ctx.lineWidth = 1.8;
+      for (let i = 0; i < waveCount; i++) {
+        const distFromCenter = Math.abs(i - Math.floor(waveCount / 2));
+        const amp = Math.max(2, 12 - distFromCenter * 1.1);
+        ctx.strokeStyle = distFromCenter < 3 ? "#f43f5e" : "rgba(255, 255, 255, 0.85)";
+        ctx.beginPath();
+        ctx.moveTo(startX + i * step, centerY - amp);
+        ctx.lineTo(startX + i * step, centerY + amp);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 10px monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("AM", 16, 16);
+
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#f43f5e";
+      ctx.fillText("505", w - 16, 16);
+      break;
+    }
+
+    case "taylorswift": {
+      // Taylor Swift: Script "Lover" Glow & Floating Hearts
+      ctx.save();
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(244, 114, 182, 0.8)";
+      ctx.shadowBlur = 8;
+      ctx.font = "italic bold 18px 'Georgia', serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Lover ♡", w / 2, 17);
+      ctx.restore();
+
+      // Floating heart watermark outlines in corners
+      ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+      ctx.font = "10px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("💖 TAYLOR SWIFT", 16, 17);
+      ctx.textAlign = "right";
+      ctx.fillText("ERA'S TOUR 💖", w - 16, 17);
+      break;
+    }
+
+    case "sza": {
+      // SZA: Deep Sea Marine SOS Watermark
+      ctx.fillStyle = "#fde047";
+      ctx.font = "900 11px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("⚓ S • O • S // SNOOZE ⚓", w / 2, 16);
+
+      ctx.strokeStyle = "rgba(253, 224, 71, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w / 2 - 80, 22);
+      ctx.lineTo(w / 2 + 80, 22);
+      ctx.stroke();
+      break;
+    }
+
+    case "frankocean": {
+      // Frank Ocean: Bauhaus Minimal Racing Stripes & Blonded Logo
+      ctx.fillStyle = "#15803d";
+      ctx.fillRect(16, 11, 16, 6);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fillRect(34, 11, 16, 6);
+      ctx.fillStyle = "#fef3c7";
+      ctx.fillRect(52, 11, 16, 6);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 11px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("B L O N D E D", w / 2, 15);
+
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#fdba74";
+      ctx.font = "bold 9px monospace";
+      ctx.fillText("PINK + WHITE 🍊", w - 16, 15);
+      break;
+    }
+  }
+
+  ctx.restore();
+}
+
 // Draw checkered pattern
 function drawCheckeredPattern(
   ctx: CanvasRenderingContext2D, w: number, h: number, c1: string, c2: string
@@ -725,6 +960,11 @@ export async function renderFixed4CutStrip(
     drawCheckeredPattern(ctx, geom.baseWidth, geom.baseHeight, frame.cornerColors.tl, frame.cornerColors.tr);
   } else {
     drawFrameBorder(ctx, frame, geom.baseWidth, geom.baseHeight);
+  }
+
+  // Draw Album Art, Logos, & Signature Music Theme Graphics
+  if (frame.musicTheme) {
+    drawMusicBandThemeGraphics(ctx, frame, geom.baseWidth, geom.baseHeight, geom.labelY);
   }
 
   // 2. Decorative Effects & Artistic Borders

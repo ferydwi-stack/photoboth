@@ -36,14 +36,70 @@ import {
 type StudioTab = "layout" | "photos" | "frames" | "stickers" | "filters" | "text";
 
 const SONG_PRESETS = [
-  { title: "THE 1975", subtitle: "About You // 'Do you think I have forgotten?'", icon: "🖤" },
-  { title: "MULTO", subtitle: "Cup of Joe // 'Kahit sa panaginip lang...'", icon: "🥀" },
-  { title: "WAVE TO EARTH", subtitle: "seasons // 'I'll be your seasons'", icon: "🌊" },
-  { title: "NEWJEANS", subtitle: "Ditto // 'Stay in the middle'", icon: "🐰" },
-  { title: "ARCTIC MONKEYS", subtitle: "505 // 'I'm going back to 505'", icon: "🎸" },
-  { title: "TAYLOR SWIFT", subtitle: "Lover // 'Can I go where you go?'", icon: "💖" },
-  { title: "SZA", subtitle: "Snooze // 'I can't lose with you'", icon: "🌙" },
-  { title: "FRANK OCEAN", subtitle: "Pink + White // 'Everyday goes'", icon: "🍊" },
+  {
+    frameId: "frame-the1975",
+    title: "THE 1975",
+    subtitle: "About You // 'Do you think I have forgotten?'",
+    icon: "🖤",
+    band: "The 1975",
+    styleHint: "Hitam Minimalis + Logo Neon 1975",
+  },
+  {
+    frameId: "frame-multo",
+    title: "MULTO",
+    subtitle: "Cup of Joe // 'Kahit sa panaginip lang...'",
+    icon: "🥀",
+    band: "Cup of Joe",
+    styleHint: "Dark Crimson + Mawar Gothic",
+  },
+  {
+    frameId: "frame-wavetoearth",
+    title: "WAVE TO EARTH",
+    subtitle: "seasons // 'I'll be your seasons'",
+    icon: "🌊",
+    band: "wave to earth",
+    styleHint: "Ocean Teal + Alur Ombak & Vinyl",
+  },
+  {
+    frameId: "frame-newjeans",
+    title: "NEWJEANS",
+    subtitle: "Ditto // 'Stay in the middle'",
+    icon: "🐰",
+    band: "NewJeans",
+    styleHint: "Y2K Biru-Lilac + Bunny REC HUD",
+  },
+  {
+    frameId: "frame-arcticmonkeys",
+    title: "ARCTIC MONKEYS",
+    subtitle: "505 // 'I'm going back to 505'",
+    icon: "🎸",
+    band: "Arctic Monkeys",
+    styleHint: "Obsidian Black + Gelombang AM",
+  },
+  {
+    frameId: "frame-taylorswift",
+    title: "TAYLOR SWIFT",
+    subtitle: "Lover // 'Can I go where you go?'",
+    icon: "💖",
+    band: "Taylor Swift",
+    styleHint: "Pink Sunset + Logo Lover & Love",
+  },
+  {
+    frameId: "frame-sza",
+    title: "SZA",
+    subtitle: "Snooze // 'I can't lose with you'",
+    icon: "🌙",
+    band: "SZA",
+    styleHint: "Deep Ocean Navy + Logo S.O.S",
+  },
+  {
+    frameId: "frame-frankocean",
+    title: "FRANK OCEAN",
+    subtitle: "Pink + White // 'Everyday goes'",
+    icon: "🍊",
+    band: "Frank Ocean",
+    styleHint: "Bauhaus Stripes + Blonded Orange",
+  },
 ];
 
 export default function StudioScreen() {
@@ -946,27 +1002,35 @@ export default function StudioScreen() {
                     </span>
                   </div>
                   <p className="text-[10px] font-semibold text-[#5e4777] mb-2 leading-tight">
-                    Pilih lagu hits favoritmu untuk langsung menghiasi judul & lirik di bagian bawah frame:
+                    Pilih lagu hits favoritmu — <strong className="text-[#764ba2]">Desain frame, warna, logo band & teks</strong> akan otomatis berubah serasi:
                   </p>
-                  <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                  <div className="grid grid-cols-2 gap-1.5 max-h-[190px] overflow-y-auto pr-1">
                     {SONG_PRESETS.map((p, idx) => (
                       <button
                         key={idx}
                         onClick={() => {
                           playClick();
+                          const matchedFrame = FRAMES.find((f) => f.id === p.frameId);
+                          if (matchedFrame) {
+                            setSelectedFrame(matchedFrame);
+                          }
                           setCustomTitle(p.title);
                           setCustomSubtitle(p.subtitle);
                         }}
                         className="p-1.5 rounded-xl border border-[#764ba2]/30 bg-white hover:bg-[#764ba2] hover:text-white transition-all text-left flex items-start gap-1.5 cursor-pointer shadow-xs group"
+                        title={`Terapkan tema album ${p.band}: ${p.styleHint}`}
                       >
                         <span className="text-xs">{p.icon}</span>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-[10px] font-black text-[#2d1b4e] group-hover:text-white truncate">
                             {p.title}
                           </p>
-                          <p className="text-[8.5px] font-semibold text-[#8b6cb0] group-hover:text-white/80 truncate">
+                          <p className="text-[8px] font-semibold text-[#8b6cb0] group-hover:text-white/80 truncate">
                             {p.subtitle}
                           </p>
+                          <span className="inline-block text-[7.5px] font-bold text-[#ff4d6d] group-hover:text-yellow-200 mt-0.5 truncate max-w-full">
+                            ✨ {p.styleHint}
+                          </span>
                         </div>
                       </button>
                     ))}

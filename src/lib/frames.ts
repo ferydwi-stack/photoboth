@@ -2,13 +2,23 @@
 // Each frame is rendered on canvas with special effects and fixed-proportions photobooth strip slots
 
 export type FrameShapeStyle = "classic" | "arch" | "washi-tape" | "stamp" | "wave" | "collage-tilt";
+export type MusicBandTheme =
+  | "the1975"
+  | "multo"
+  | "wavetoearth"
+  | "newjeans"
+  | "arcticmonkeys"
+  | "taylorswift"
+  | "sza"
+  | "frankocean";
 
 export interface FrameDef {
   id: string;
   name: string;
   emoji: string;
-  category: "classic" | "korean" | "y2k" | "film" | "cute" | "minimal" | "dark" | "artistic";
+  category: "music" | "classic" | "korean" | "y2k" | "film" | "cute" | "minimal" | "dark" | "artistic";
   shapeStyle?: FrameShapeStyle; // Bentuk Seni: arch, washi tape, stamp, wave, collage-tilt
+  musicTheme?: MusicBandTheme; // Otomatisasi style logo/gambar band & album hits
   cornerColors: { tl: string; tr: string; bl: string; br: string };
   labelBg: string;
   labelText: string;
@@ -29,6 +39,169 @@ export interface FrameDef {
 }
 
 export const FRAMES: FrameDef[] = [
+  // ===== HIT ALBUMS & BANDS (THE 1975, MULTO, NEWJEANS, ETC.) =====
+  {
+    id: "frame-the1975",
+    name: "The 1975: About You",
+    emoji: "🖤",
+    category: "music",
+    musicTheme: "the1975",
+    cornerColors: { tl: "#09090b", tr: "#18181b", bl: "#09090b", br: "#27272a" },
+    solidColor: "#101012",
+    labelBg: "#1c1c20",
+    labelText: "#ffffff",
+    borderWidth: 32,
+    borderRadius: 16,
+    innerRadius: 10,
+    gap: 14,
+    fontFamily: "'Courier New', monospace",
+    hasGlitter: false,
+    hasSparkles: false,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    tagline: "The 1975 // About You",
+  },
+  {
+    id: "frame-multo",
+    name: "Multo: Cup of Joe",
+    emoji: "🥀",
+    category: "music",
+    musicTheme: "multo",
+    cornerColors: { tl: "#2e0814", tr: "#4c0519", bl: "#1c040b", br: "#3a0916" },
+    labelBg: "#3b0716",
+    labelText: "#fed7aa",
+    borderWidth: 30,
+    borderRadius: 18,
+    innerRadius: 12,
+    gap: 14,
+    fontFamily: "'Georgia', serif",
+    hasGlitter: false,
+    hasSparkles: true,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    tagline: "Kahit Sa Panaginip Lang // Multo",
+  },
+  {
+    id: "frame-wavetoearth",
+    name: "wave to earth: seasons",
+    emoji: "🌊",
+    category: "music",
+    musicTheme: "wavetoearth",
+    cornerColors: { tl: "#081b29", tr: "#0f3750", bl: "#05111a", br: "#154c6e" },
+    labelBg: "#0c273d",
+    labelText: "#7dd3fc",
+    borderWidth: 30,
+    borderRadius: 18,
+    innerRadius: 12,
+    gap: 14,
+    fontFamily: "'Nunito', sans-serif",
+    hasGlitter: false,
+    hasSparkles: true,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    tagline: "wave to earth // seasons",
+  },
+  {
+    id: "frame-newjeans",
+    name: "NewJeans: Ditto Bunny",
+    emoji: "🐰",
+    category: "music",
+    musicTheme: "newjeans",
+    cornerColors: { tl: "#2563eb", tr: "#7c3aed", bl: "#0284c7", br: "#c084fc" },
+    labelBg: "#1e1b4b",
+    labelText: "#ffffff",
+    borderWidth: 30,
+    borderRadius: 20,
+    innerRadius: 12,
+    gap: 12,
+    fontFamily: "'Courier New', monospace",
+    hasGlitter: true,
+    hasSparkles: true,
+    hasSprockets: false,
+    hasInnerShadow: false,
+    tagline: "Stay in the middle // Ditto",
+  },
+  {
+    id: "frame-arcticmonkeys",
+    name: "Arctic Monkeys: 505 / AM",
+    emoji: "🎸",
+    category: "music",
+    musicTheme: "arcticmonkeys",
+    cornerColors: { tl: "#09090b", tr: "#18181b", bl: "#050507", br: "#27272a" },
+    solidColor: "#0a0a0c",
+    labelBg: "#18181b",
+    labelText: "#f43f5e",
+    borderWidth: 32,
+    borderRadius: 16,
+    innerRadius: 10,
+    gap: 14,
+    fontFamily: "'Nunito', sans-serif",
+    hasGlitter: false,
+    hasSparkles: false,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    tagline: "AM Frequency // 505",
+  },
+  {
+    id: "frame-taylorswift",
+    name: "Taylor Swift: Lover Pink",
+    emoji: "💖",
+    category: "music",
+    musicTheme: "taylorswift",
+    cornerColors: { tl: "#f472b6", tr: "#c084fc", bl: "#fbcfe8", br: "#93c5fd" },
+    labelBg: "#fdf2f8",
+    labelText: "#be185d",
+    borderWidth: 32,
+    borderRadius: 22,
+    innerRadius: 14,
+    gap: 12,
+    fontFamily: "'Georgia', serif",
+    hasGlitter: true,
+    hasSparkles: true,
+    hasSprockets: false,
+    hasInnerShadow: false,
+    tagline: "Can I Go Where You Go? // Lover",
+  },
+  {
+    id: "frame-sza",
+    name: "SZA: SOS / Snooze",
+    emoji: "🌙",
+    category: "music",
+    musicTheme: "sza",
+    cornerColors: { tl: "#020617", tr: "#1e3a8a", bl: "#0b1329", br: "#1d4ed8" },
+    labelBg: "#0a1128",
+    labelText: "#fde047",
+    borderWidth: 30,
+    borderRadius: 18,
+    innerRadius: 12,
+    gap: 14,
+    fontFamily: "'Nunito', sans-serif",
+    hasGlitter: false,
+    hasSparkles: true,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    tagline: "I Can't Lose With You // S.O.S",
+  },
+  {
+    id: "frame-frankocean",
+    name: "Frank Ocean: Blonde / Orange",
+    emoji: "🍊",
+    category: "music",
+    musicTheme: "frankocean",
+    cornerColors: { tl: "#c2410c", tr: "#d97706", bl: "#9a3412", br: "#b45309" },
+    labelBg: "#431407",
+    labelText: "#fed7aa",
+    borderWidth: 32,
+    borderRadius: 14,
+    innerRadius: 8,
+    gap: 12,
+    fontFamily: "'Courier New', monospace",
+    hasGlitter: false,
+    hasSparkles: false,
+    hasSprockets: false,
+    hasInnerShadow: true,
+    tagline: "Blonded // Pink + White",
+  },
   // ===== KOREAN VIBES =====
   {
     id: "korean-blossom",
@@ -501,6 +674,7 @@ export const FRAMES: FrameDef[] = [
 
 export const FRAME_CATEGORIES = [
   { id: "all", name: "Semua Frame", emoji: "✨" },
+  { id: "music", name: "Lagu & Band Hits", emoji: "🎵" },
   { id: "artistic", name: "Bentuk Seni & Unik", emoji: "🎨" },
   { id: "korean", name: "Korean 4-Cut", emoji: "🇰🇷" },
   { id: "y2k", name: "Y2K & Cyber", emoji: "💿" },
